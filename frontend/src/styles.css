@@ -167,3 +167,5 @@ button { cursor: pointer; }
   .home-request-button { width: 100%; }
   .nav-signout { min-height: 48px; text-align: left; border-bottom: 1px solid #f0eff5; }
 }
+.past-requests { padding: 35px 0 54px; border-top: 1px solid var(--border); scroll-margin-top: 58px; }
+.past-requests .section-heading { margin-bottom: 15px; }
