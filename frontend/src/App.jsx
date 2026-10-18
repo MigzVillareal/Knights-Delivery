@@ -7,11 +7,17 @@ const categories = [
   { id: 'other', label: 'Other', color: '#BAB7D3' },
 ];
 const emptyRequest = { category: '', pickup: '', details: '', dropoff: '', handoff: '', estimate: '' };
+const exampleRunnerRequests = [
+  { id: 'EX-001', category: 'food', status: 'Awaiting pickup', pickup: 'Campus Café counter', details: 'One sealed lunch order', dropoff: 'North Hall, main entrance', handoff: 'Meet by the front desk', estimate: 'Not provided' },
+  { id: 'EX-002', category: 'groceries', status: 'Ready for pickup', pickup: 'Campus Market service desk', details: 'Small paper bag with pantry items', dropoff: 'Science Building, lobby', handoff: 'Leave with the reception desk', estimate: 'Not provided' },
+];
 
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mode, setMode] = useState('signin');
   const [currentUser, setCurrentUser] = useState(null);
+  const [appView, setAppView] = useState('customer');
+  const [runnerRequests] = useState(exampleRunnerRequests);
   const [authNotice, setAuthNotice] = useState('');
   const [requestStep, setRequestStep] = useState('closed');
   const [request, setRequest] = useState(emptyRequest);
@@ -27,6 +33,7 @@ export default function App() {
     const displayName = enteredName || email.split('@')[0] || 'Knight';
     // This is an in-memory prototype sign-in only; no credentials are sent or stored.
     setCurrentUser({ displayName, email });
+    setAppView('customer');
     setAuthNotice('');
     setRequestStep('closed');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -34,6 +41,7 @@ export default function App() {
 
   function signOut() {
     setCurrentUser(null);
+    setAppView('customer');
     setRequestStep('closed');
     setRequest(emptyRequest);
     setRequestNotice('');
@@ -79,7 +87,7 @@ export default function App() {
         <a className="brand" href="#home" aria-label="Knights Delivery home" onClick={closeMenu}><span className="brand-mark" aria-hidden="true">K</span><span>Knights <strong>Delivery</strong></span></a>
         <button className="menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="primary-navigation" aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} onClick={() => setMenuOpen(open => !open)}><span /><span /><span className="visually-hidden">Menu</span></button>
         <nav id="primary-navigation" className={`navigation ${menuOpen ? 'navigation-open' : ''}`} aria-label="Main navigation">
-          {currentUser ? <><a href="#customer-home" onClick={closeMenu}>Home</a><a href="#past-requests" onClick={closeMenu}>Past requests</a><button className="nav-signout" type="button" onClick={() => { closeMenu(); signOut(); }}>Sign out</button></> : <a href="#sign-in" onClick={closeMenu}>Sign in</a>}
+          {currentUser ? <><a href={appView === 'customer' ? '#customer-home' : '#runner-home'} onClick={closeMenu}>Home</a><a href={appView === 'customer' ? '#past-requests' : '#runner-queue'} onClick={closeMenu}>{appView === 'customer' ? 'Past requests' : 'Runner queue'}</a><button className="nav-signout" type="button" onClick={() => { closeMenu(); signOut(); }}>Sign out</button></> : <a href="#sign-in" onClick={closeMenu}>Sign in</a>}
         </nav>
       </header>
       <main id="main-content">
@@ -102,6 +110,8 @@ export default function App() {
             </div>
           </section>
         </> : <>
+          <div className="view-switch" role="group" aria-label="Switch between customer and runner views"><span>View as</span><button type="button" className={appView === 'customer' ? 'view-option active' : 'view-option'} aria-pressed={appView === 'customer'} onClick={() => setAppView('customer')}>Customer</button><button type="button" className={appView === 'runner' ? 'view-option active' : 'view-option'} aria-pressed={appView === 'runner'} onClick={() => setAppView('runner')}>Runner</button></div>
+          {appView === 'customer' ? <>
           <section className="customer-home" id="customer-home" aria-labelledby="home-title">
             <div><p className="eyebrow">YOUR DELIVERY HOME</p><h1 id="home-title">Welcome, {currentUser.displayName}.</h1><p className="intro">Start a campus delivery request.</p></div>
             <button className="primary-button home-request-button" type="button" onClick={startRequest}>Create a request <span aria-hidden="true">→</span></button>
@@ -125,6 +135,7 @@ export default function App() {
             </div>}
           </section>}
           <section className="past-requests" id="past-requests" aria-labelledby="past-requests-title"><div className="section-heading"><div><p className="eyebrow">YOUR ACTIVITY</p><h2 id="past-requests-title">Past requests</h2></div></div><div className="request-empty"><span className="empty-mark" aria-hidden="true">✳</span><p>No past requests yet.</p><span>Requests will appear here when request saving is connected.</span></div></section>
+          </> : <section className="runner-home" id="runner-home" aria-labelledby="runner-title"><div className="runner-heading"><div><p className="eyebrow">RUNNER VIEW</p><h1 id="runner-title">Available requests</h1><p className="intro">Review pickup and drop-off details for these fictional examples.</p></div><span className="fictional-notice">Fictional examples · no participant data</span></div><div className="runner-request-list" id="runner-queue">{runnerRequests.map((runnerRequest) => { const category = categories.find(item => item.id === runnerRequest.category); return <article className="runner-request-card" key={runnerRequest.id}><header className="runner-card-header"><div><span className="step-label">EXAMPLE {runnerRequest.id}</span><h2>{category?.label} request</h2></div><span className="runner-status">{runnerRequest.status}</span></header><dl className="runner-details"><div><dt>Pickup</dt><dd>{runnerRequest.pickup}</dd></div><div><dt>Item details</dt><dd>{runnerRequest.details}</dd></div><div><dt>Drop-off</dt><dd>{runnerRequest.dropoff}</dd></div><div><dt>Handoff note</dt><dd>{runnerRequest.handoff}</dd></div><div><dt>Customer estimate</dt><dd>{runnerRequest.estimate}</dd></div></dl><p className="runner-fee-note">Service fee: Pending approval</p></article>; })}</div></section>}
         </>}
       </main>
       <footer className="footer"><span>KNIGHTS DELIVERY SYSTEM</span><span>Built for campus, shaped by students</span></footer>
