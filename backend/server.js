@@ -1,34 +1,32 @@
-import express from 'express';
 import dotenv from 'dotenv';
-import cors from 'cors';
-import connectDB from './config/db.js';
+import { createApp } from './app.js';
+import { loadConfig } from './config/env.js';
+import { logEvent } from './services/logger.js';
 
 dotenv.config();
 
-const app = express();
-
-app.use(express.json());
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true
-}));
-
-app.get('/', (req, res) => {
-  res.send('API is running...');
-});
-
-const PORT = process.env.PORT || 5000;
-
 const startServer = async () => {
-  try {
-    await connectDB();
-    app.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  const config = loadConfig();
+  const app = createApp(config);
+  const server = app.listen(config.port, () => {
+    logEvent('server.started', {
+      environment: config.nodeEnv,
+      port: config.port
     });
-  } catch (error) {
-    console.error(`Failed to connect to database: ${error.message}`);
-    process.exit(1);
-  }
+  });
+
+  const shutdown = (signal) => {
+    logEvent('server.stopping', { signal });
+    server.close(() => process.exit(0));
+  };
+
+  process.once('SIGINT', shutdown);
+  process.once('SIGTERM', shutdown);
 };
 
-startServer();
+startServer().catch((error) => {
+  logEvent('server.start_failed', {
+    message: error.message
+  }, 'error');
+  process.exitCode = 1;
+});
