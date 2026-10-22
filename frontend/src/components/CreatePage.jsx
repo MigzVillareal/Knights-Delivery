@@ -8,14 +8,13 @@ export default function CreatePage({ state, onSubmit }) {
   const [cat, setCat] = useState('');
   const [drop, setDrop] = useState('');
   const [notes, setNotes] = useState('');
-  const [payment, setPayment] = useState('GCash');
-  const [express, setExpress] = useState(false);
+  const [payment, setPayment] = useState('Cash');
   const [timeIdx, setTimeIdx] = useState(0);
   const [showCatSheet, setShowCatSheet] = useState(false);
   const [showTimeSheet, setShowTimeSheet] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const fee = cat ? FEE_BASE[cat] + (express ? 15 : 0) : 20;
+  const fee = cat ? FEE_BASE[cat] : 20;
 
   function validate() {
     const e = {};
@@ -28,7 +27,7 @@ export default function CreatePage({ state, onSubmit }) {
 
   function handlePost() {
     if (!validate()) return;
-    onSubmit({ items, cat, drop, notes, payment, express, time: TIME_OPTIONS[timeIdx] });
+    onSubmit({ items, cat, drop, notes, payment, time: TIME_OPTIONS[timeIdx] });
     // reset
     setItems(''); setCat(''); setDrop(''); setNotes('');
   }
@@ -37,7 +36,7 @@ export default function CreatePage({ state, onSubmit }) {
 
   const catOptions = [
     { id: 'food',     icon: 'fa-burger',          label: 'Food',     cls: 'c-food' },
-    { id: 'supplies', icon: 'fa-backpack',         label: 'Supplies', cls: 'c-supplies' },
+    { id: 'supplies', icon: 'fa-pen-ruler',       label: 'Supplies', cls: 'c-supplies' },
     { id: 'errands',  icon: 'fa-person-running',   label: 'Errands',  cls: 'c-errands' },
     { id: 'printing', icon: 'fa-print',            label: 'Printing', cls: 'c-printing' },
   ];
@@ -154,15 +153,15 @@ export default function CreatePage({ state, onSubmit }) {
               <label>Payment method</label>
               <div className="payseg">
                 {[
-                  { id: 'GCash', icon: 'fa-wallet', label: 'GCash' },
-                  { id: 'Cash on Delivery', icon: 'fa-money-bill-wave', label: 'Cash' },
-                  { id: 'Maya', icon: 'fa-credit-card', label: 'Maya' },
+                  { id: 'Cash', icon: 'fa-money-bill-wave', label: 'Cash' },
+                  { id: 'E-Wallet', icon: 'fa-wallet', label: 'E-Wallet' },
                 ].map(p => (
                   <button
                     key={p.id}
                     className={payment === p.id ? 'sel' : ''}
                     onClick={() => setPayment(p.id)}
                     type="button"
+                    style={{ flex: 1, justifyContent: 'center' }}
                   >
                     <i className={`fa-solid ${p.icon}`} /> {p.label}
                   </button>
@@ -170,22 +169,7 @@ export default function CreatePage({ state, onSubmit }) {
               </div>
             </div>
 
-            {/* Express toggle */}
-            <div className="switchline" style={{ marginTop: 12 }}>
-              <div className="sic" style={{ background: 'var(--yellow-pale)', color: 'var(--yellow-ink)' }}>
-                <i className="fa-solid fa-bolt" />
-              </div>
-              <div>
-                <b>Express delivery</b>
-                <p>Rush in 30–45 min · +₱15</p>
-              </div>
-              <button
-                className={`toggle${express ? ' on' : ''}`}
-                onClick={() => setExpress(v => !v)}
-                style={{ marginLeft: 'auto' }}
-                type="button"
-              />
-            </div>
+
 
             {/* Fee box */}
             <div className="feebox">
@@ -206,9 +190,9 @@ export default function CreatePage({ state, onSubmit }) {
           <div className="panel">
             <div className="panel-head"><h2>Why Knights?</h2></div>
             {[
-              { icon: 'fa-person-running', title: 'Live tracking, no map needed', sub: 'Step-by-step journey & arrival countdown' },
-              { icon: 'fa-shield-halved', title: 'Secure PIN handoff', sub: 'Only you can confirm the drop-off' },
-              { icon: 'fa-comment', title: 'Chat & call the courier', sub: 'Built into every order' },
+              { icon: 'fa-person-running', title: 'Live order tracking', sub: 'Step-by-step updates for your delivery run' },
+              { icon: 'fa-shield-halved', title: 'Campus delivery', sub: 'Trusted ADNU student couriers' },
+              { icon: 'fa-comment', title: 'Chat with your courier', sub: 'Direct messaging built into every order' },
             ].map(item => (
               <div key={item.title} className="mrowz">
                 <span className="mic"><i className={`fa-solid ${item.icon}`} /></span>

@@ -3,24 +3,16 @@ import { FAQ_ITEMS } from '../data.js';
 import { Toggle } from './Helpers.jsx';
 
 export default function ProfilePage({ state, onUpdate, onSignOut }) {
-  const { user, dark, push, orderUpdates, orders = [], addresses = [] } = state;
+  const { user, dark, push, orderUpdates, orders = [] } = state;
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(user.fullName);
   const [editSid, setEditSid] = useState(user.sid);
   const [editEmail, setEditEmail] = useState(user.email);
   const [editPhone, setEditPhone] = useState(user.phone);
   const [openFaq, setOpenFaq] = useState(null);
-  const [newAddr, setNewAddr] = useState('');
-
   function saveProfile() {
     onUpdate({ user: { ...user, fullName: editName, sid: editSid, email: editEmail, phone: editPhone } });
     setEditing(false);
-  }
-
-  function addAddress() {
-    if (!newAddr.trim()) return;
-    onUpdate({ addresses: [...addresses, { t: newAddr.trim(), s: '', def: false }] });
-    setNewAddr('');
   }
 
   const initials = user.fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -60,56 +52,7 @@ export default function ProfilePage({ state, onUpdate, onSignOut }) {
           </div>
         )}
 
-        {/* Payment methods */}
-        <div className="panel">
-          <div className="panel-head">
-            <h2>Payment methods</h2>
-            <button className="link" type="button">+ Add new</button>
-          </div>
-          {[
-            { icon: 'fa-wallet', label: 'GCash', sub: '•••• 4821', color: 'var(--info-bg)', ink: 'var(--info)' },
-            { icon: 'fa-credit-card', label: 'Maya', sub: '•••• 9034', color: 'var(--ok-bg)', ink: 'var(--ok)' },
-          ].map(pm => (
-            <div key={pm.label} className="mrowz">
-              <span className="mic" style={{ background: pm.color, color: pm.ink }}>
-                <i className={`fa-solid ${pm.icon}`} />
-              </span>
-              <div className="grow">
-                <b>{pm.label}</b>
-                <small>{pm.sub}</small>
-              </div>
-              <button className="minibtn" type="button">Edit</button>
-            </div>
-          ))}
-        </div>
 
-        {/* Addresses */}
-        <div className="panel">
-          <div className="panel-head"><h2>Addresses</h2></div>
-          {addresses.map((addr, i) => (
-            <div key={i} className="mrowz">
-              <span className="mic"><i className="fa-solid fa-location-dot" /></span>
-              <div className="grow">
-                <b>{addr.t}</b>
-                {addr.s && <small>{addr.s}</small>}
-              </div>
-              {addr.def && <span className="badge bg-ok">Default</span>}
-            </div>
-          ))}
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <input
-              className="input" id="addrNew"
-              placeholder="e.g. SHS Building Room 204"
-              style={{ flex: 1 }}
-              value={newAddr} onChange={e => setNewAddr(e.target.value)}
-            />
-            <button className="btn btn-primary btn-sm" onClick={addAddress} style={{ width: 'auto', padding: '0 22px' }} type="button">
-              <i className="fa-solid fa-plus" />
-            </button>
-          </div>
-        </div>
-
-        {/* Preferences */}
         <div className="panel">
           <div className="panel-head"><h2>Preferences</h2></div>
           {[
@@ -123,32 +66,11 @@ export default function ProfilePage({ state, onUpdate, onSignOut }) {
               <Toggle on={pref.val} onChange={v => onUpdate({ [pref.key]: v })} />
             </div>
           ))}
-          <button className="dangerline" type="button" onClick={() => onUpdate({ orders: [] })}>
-            <i className="fa-solid fa-rotate-left" />
-            <b>Clear demo data &amp; restart</b>
-          </button>
         </div>
 
-        {/* Help & Support */}
+        {/* Help & Support — FAQs */}
         <div className="panel">
           <div className="panel-head"><h2>Help &amp; Support</h2></div>
-          <div className="helpbtns">
-            {[
-              { icon: 'fa-comment', label: 'Chat with support', sub: 'Live agent, 2 min reply', bg: 'var(--info-bg)', color: 'var(--info)' },
-              { icon: 'fa-phone', label: 'Call hotline', sub: '+63 54 123 4567', bg: 'var(--ok-bg)', color: 'var(--ok)' },
-              { icon: 'fa-triangle-exclamation', label: 'Report an issue', sub: 'Missing or late items', bg: 'var(--danger-bg)', color: 'var(--danger)' },
-              { icon: 'fa-circle-question', label: 'FAQs', sub: 'Fees, PIN & refunds', bg: 'var(--yellow-pale)', color: 'var(--yellow-ink)' },
-            ].map(h => (
-              <button key={h.label} className="helpbtn" type="button">
-                <span className="hic" style={{ background: h.bg, color: h.color }}>
-                  <i className={`fa-solid ${h.icon}`} />
-                </span>
-                <span><b>{h.label}</b><small>{h.sub}</small></span>
-              </button>
-            ))}
-          </div>
-
-          {/* FAQ accordion */}
           <div className="faq" id="faqList">
             {FAQ_ITEMS.map((faq, i) => (
               <div key={i} className={`faq-item${openFaq === i ? ' open' : ''}`}>

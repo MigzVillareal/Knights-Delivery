@@ -3,7 +3,7 @@ import buildingImg from '../image/building.png';
 
 export default function GatePage({ onLogin }) {
   const [form, setForm] = useState('login'); // 'login' | 'signup'
-  const [email, setEmail] = useState('jude@adnu.edu.ph');
+  const [email, setEmail] = useState('juandelacruz@adnu.edu.ph');
   const [pass, setPass] = useState('knights123');
   const [showPass, setShowPass] = useState(false);
   const [name, setName] = useState('');
@@ -11,17 +11,19 @@ export default function GatePage({ onLogin }) {
   const [suEmail, setSuEmail] = useState('');
   const [suPass, setSuPass] = useState('');
   const [showSuPass, setShowSuPass] = useState(false);
-  const [terms, setTerms] = useState(false);
 
   function handleLogin(e) {
     e.preventDefault();
     if (!email || pass.length < 6) return;
-    onLogin({ email, name: email.split('@')[0] });
+    const resolvedName = email.toLowerCase().startsWith('juandelacruz')
+      ? 'Juan Dela Cruz'
+      : email.split('@')[0];
+    onLogin({ email, name: resolvedName });
   }
 
   function handleSignup(e) {
     e.preventDefault();
-    if (!name || !sid || !suEmail || suPass.length < 6 || !terms) return;
+    if (!name || !sid || !suEmail || suPass.length < 6) return;
     onLogin({ email: suEmail, name });
   }
 
@@ -35,8 +37,8 @@ export default function GatePage({ onLogin }) {
           <p>Get it. Delivered on campus.</p>
           <div className="gate-feats">
             <span className="gate-feat"><i className="fa-solid fa-person-running" />Live courier tracking</span>
-            <span className="gate-feat"><i className="fa-solid fa-wallet" />Pay with GCash, Maya or cash</span>
-            <span className="gate-feat"><i className="fa-solid fa-comment" />Chat &amp; call your courier</span>
+            <span className="gate-feat"><i className="fa-solid fa-wallet" />Pay with Cash or E-Wallet</span>
+            <span className="gate-feat"><i className="fa-solid fa-comment" />Chat with your courier</span>
           </div>
         </div>
       </div>
@@ -81,17 +83,9 @@ export default function GatePage({ onLogin }) {
                     </span>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right', marginTop: 12 }}>
-                  <button className="link" type="button">Forgot password?</button>
-                </div>
                 <button className="btn btn-primary" type="submit" style={{ marginTop: 16 }}>Log In</button>
               </form>
 
-              <div className="divider">OR CONTINUE WITH</div>
-              <div className="socialrow">
-                <button className="socbtn" type="button"><i className="fa-brands fa-google" />Google</button>
-                <button className="socbtn" type="button"><i className="fa-brands fa-facebook-f" />Facebook</button>
-              </div>
               <div className="authfoot">
                 New to Knights Delivery?{' '}
                 <button className="link" type="button" onClick={() => setForm('signup')}>Sign Up</button>
@@ -145,23 +139,6 @@ export default function GatePage({ onLogin }) {
                       </button>
                     </span>
                   </div>
-                </div>
-                <div
-                  className={`checkline${terms ? ' on' : ''}`}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginTop: 16, cursor: 'pointer' }}
-                  onClick={() => setTerms(v => !v)}
-                >
-                  <span className="checkbox" style={{
-                    width: 23, height: 23, borderRadius: 7, border: '2.5px solid var(--line-2)', display: 'grid',
-                    placeItems: 'center', color: '#fff', flexShrink: 0, marginTop: 1,
-                    background: terms ? 'var(--navy)' : 'transparent', transition: 'all .2s'
-                  }}>
-                    {terms && <i className="fa-solid fa-check" style={{ fontSize: 11 }} />}
-                  </span>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-2)', lineHeight: 1.45 }}>
-                    I agree to the <b style={{ color: 'var(--navy-soft)' }}>Terms of Service</b> and{' '}
-                    <b style={{ color: 'var(--navy-soft)' }}>Privacy Policy</b> of Knights Delivery.
-                  </p>
                 </div>
                 <button className="btn btn-primary" type="submit" style={{ marginTop: 20 }}>Create Account</button>
               </form>

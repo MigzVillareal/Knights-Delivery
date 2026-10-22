@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CATS } from '../data.js';
 
-export default function CourierPage({ state, onUpdate, onNavigate }) {
+export default function CourierPage({ state, onUpdate, onNavigate, onOpenChat }) {
   const [subTab, setSubTab] = useState('available');
   const { courierOnline, courierEarnings, courierTrips, availableOrders = [], courierTripsLog = [], activeCourierOrderId } = state;
 
@@ -21,26 +21,12 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
     onUpdate({ availableOrders: availableOrders.filter(o => o.id !== orderId) });
   }
 
-  function addSimulatedOrder() {
-    const id = `KD-${2440 + availableOrders.length}`;
-    onUpdate({
-      availableOrders: [...availableOrders, {
-        id, title: 'Simulated Test Order', cat: 'food',
-        items: '1x Rice Meal Combo, 1 Iced Latte',
-        pickup: "Xavier Cafe (Admin Bldg)", dropoff: 'Library 3rd Floor',
-        fee: 25, tip: 5, student: 'Test Student', phone: '+63 900 000 0000',
-        time: 'just now', etaWalk: '2 min walk',
-        notes: 'No notes.', pin: '0000', status: 'finding', stage: 0,
-      }],
-    });
-  }
 
   const activeOrder = activeCourierOrderId
     ? availableOrders.find(o => o.id === activeCourierOrderId)
     : null;
 
   const openCount = availableOrders.filter(o => o.status === 'finding').length;
-  const walletBalance = courierEarnings + courierTripsLog.reduce((a, t) => a + t.fee + (t.tip || 0), 0);
 
   return (
     <section className="page active" id="page-courier">
@@ -54,7 +40,7 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
             </div>
             <div>
               <h2>Juan Dela Cruz <span style={{ fontSize: 14, color: 'var(--yellow)', fontWeight: 800, verticalAlign: 1 }}>★ 4.9</span></h2>
-              <p>Knight Courier · Honda Click MC 4821 · Ateneo de Naga</p>
+              <p>Knight Courier · Ateneo de Naga</p>
             </div>
           </div>
           <button
@@ -70,7 +56,7 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
         <div className="courier-stat-grid">
           {[
             { label: "Today's Earnings", val: `₱${courierEarnings}`, sub: `${courierTrips} completed runs` },
-            { label: 'Deliveries Today', val: courierTrips, sub: '100% on time' },
+            { label: 'Deliveries Today', val: courierTrips, sub: 'Completed' },
             { label: 'Available Nearby', val: openCount, sub: 'orders waiting' },
             { label: 'Acceptance Rate', val: '98%', sub: '★ Top rated' },
           ].map(s => (
@@ -101,14 +87,9 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
       {/* Available orders panel */}
       {subTab === 'available' && (
         <div id="cpanel-available">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-            <div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)' }}>Campus Radar</h2>
-              <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>Orders ready for pickup around ADNU campus</p>
-            </div>
-            <button className="minibtn" onClick={addSimulatedOrder} style={{ padding: '9px 16px', background: 'var(--navy-tint)', color: 'var(--navy-soft)' }} type="button">
-              <i className="fa-solid fa-plus" style={{ fontSize: 13, verticalAlign: -1 }} /> Post simulated test request
-            </button>
+          <div style={{ marginBottom: 16 }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)' }}>Campus Radar</h2>
+            <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>Orders ready for pickup around ADNU campus</p>
           </div>
           <div id="c-available-list">
             {availableOrders.filter(o => o.status === 'finding').length === 0 ? (
@@ -136,7 +117,7 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
                     <div className="route-container">
                       <div className="route-step">
                         <span className="route-dot pickup"><i className="fa-solid fa-circle-dot" style={{ fontSize: 7 }} /></span>
-                        <small>Pickup · {order.etaWalk}</small>
+                        <small>Pickup</small>
                         <b>{order.pickup}</b>
                       </div>
                       <div className="route-step">
@@ -191,8 +172,28 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
                   <small style={{ display: 'block', color: 'var(--muted)', fontWeight: 700 }}>{activeOrder.phone}</small>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="minibtn" type="button"><i className="fa-solid fa-phone" /> Call</button>
-                  <button className="minibtn primary" type="button"><i className="fa-solid fa-comment" /> Chat</button>
+                  <button
+                    className="minibtn primary"
+                    type="button"
+                    onClick={() => {
+                      if (onOpenChat) {
+                        onOpenChat({
+                          name: activeOrder.student || 'Student',
+                          subtitle: `Student · ${activeOrder.id}`,
+                          avatar: (activeOrder.student || 'ST')
+                            .split(' ')
+                            .map(w => w[0])
+                            .join('')
+                            .slice(0, 2)
+                            .toUpperCase(),
+                          placeholder: `Message ${activeOrder.student || 'student'}...`,
+                          isCourierMode: true,
+                        });
+                      }
+                    }}
+                  >
+                    <i className="fa-solid fa-comment" /> Chat
+                  </button>
                 </div>
               </div>
               <div className="route-container">
@@ -210,11 +211,13 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
                   <i className="fa-solid fa-note-sticky" /> {activeOrder.notes}
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
-                <button className="cact call" type="button"><i className="fa-solid fa-phone" />Call</button>
-                <button className="cact chat" type="button"><i className="fa-solid fa-comment" />Chat</button>
-                <button className="btn btn-primary btn-sm" type="button" style={{ borderRadius: 14, width: 'auto', fontSize: 13 }}>
-                  <i className="fa-solid fa-circle-check" />Delivered
+              <div>
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  style={{ width: '100%', borderRadius: 14, fontSize: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                >
+                  <i className="fa-solid fa-circle-check" /> Delivered
                 </button>
               </div>
             </div>
@@ -225,26 +228,6 @@ export default function CourierPage({ state, onUpdate, onNavigate }) {
       {/* Earnings panel */}
       {subTab === 'earnings' && (
         <div id="cpanel-earnings">
-          <div className="panel" style={{ marginBottom: 20 }}>
-            <div className="panel-head">
-              <h2>Courier Wallet &amp; Payouts</h2>
-              <button className="btn btn-primary btn-sm" style={{ width: 'auto', padding: '8px 18px' }} type="button">
-                <i className="fa-solid fa-wallet" /> Cash Out to GCash
-              </button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14, marginTop: 12 }}>
-              {[
-                { label: 'Available Balance', val: `₱${walletBalance}.00`, bg: 'var(--navy-tint)', color: 'var(--navy)', labelColor: 'var(--navy-soft)' },
-                { label: 'Base Delivery Fees', val: '₱280.00', bg: 'var(--ok-bg)', color: 'var(--ok)', labelColor: 'var(--ok)' },
-                { label: 'Customer Tips', val: '₱65.00', bg: 'var(--yellow-pale)', color: 'var(--yellow-ink)', labelColor: 'var(--yellow-ink)' },
-              ].map(s => (
-                <div key={s.label} className="c-stat-box" style={{ background: s.bg }}>
-                  <small style={{ color: s.labelColor }}>{s.label}</small>
-                  <b style={{ color: s.color, fontSize: 28 }}>{s.val}</b>
-                </div>
-              ))}
-            </div>
-          </div>
           <div className="panel">
             <div className="panel-head"><h2>Today's Completed Trips</h2></div>
             <div id="c-earnings-list">

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 
-export default function ChatDrawer({ isOpen, onClose, chatMessages = [], onSendMessage }) {
+export default function ChatDrawer({ isOpen, onClose, chatMessages = [], onSendMessage, recipient }) {
   const [text, setText] = useState('');
   const bottomRef = useRef(null);
 
@@ -21,22 +21,35 @@ export default function ChatDrawer({ isOpen, onClose, chatMessages = [], onSendM
     setText('');
   }
 
-  const QUICK_REPLIES = [
-    "I'm at the drop-off location!",
-    "Where are you currently?",
-    "Thank you so much!",
-  ];
+  const name = recipient?.name || 'Juan Dela Cruz';
+  const subtitle = recipient?.subtitle || 'Courier · Active Delivery';
+  const avatar = recipient?.avatar || 'JD';
+  const placeholder = recipient?.placeholder || 'Type a message...';
+
+  const isCourier = Boolean(recipient?.isCourierMode);
+
+  const QUICK_REPLIES = isCourier
+    ? [
+        "I'm at the pickup location!",
+        "Heading to your drop-off now!",
+        "I have arrived at the drop-off!",
+      ]
+    : [
+        "I'm at the drop-off location!",
+        "Where are you currently?",
+        "Thank you so much!",
+      ];
 
   return (
     <>
       <div className="drawer-backdrop open" onClick={onClose} />
       <div className="drawer chat-drawer open" style={{ zIndex: 92 }}>
         <div className="drawer-head" style={{ gap: 12 }}>
-          <div className="avatar" style={{ width: 40, height: 40, fontSize: 14 }}>JD</div>
+          <div className="avatar" style={{ width: 40, height: 40, fontSize: 14 }}>{avatar}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ fontSize: 15, margin: 0 }}>Juan Dela Cruz</h2>
+            <h2 style={{ fontSize: 15, margin: 0 }}>{name}</h2>
             <small style={{ color: 'var(--ok)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <span className="pulse-dot" style={{ background: 'var(--ok)', width: 6, height: 6 }} /> Courier · Active Delivery
+              <span className="pulse-dot" style={{ background: 'var(--ok)', width: 6, height: 6 }} /> {subtitle}
             </small>
           </div>
           <button className="iconbtn ghost" onClick={onClose} type="button" aria-label="Close">
@@ -103,7 +116,7 @@ export default function ChatDrawer({ isOpen, onClose, chatMessages = [], onSendM
           <input
             className="input"
             type="text"
-            placeholder="Type a message to courier..."
+            placeholder={placeholder}
             value={text}
             onChange={e => setText(e.target.value)}
             style={{ borderRadius: 999, padding: '12px 16px', fontSize: 14 }}

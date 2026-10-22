@@ -1,18 +1,16 @@
 // Shared data constants for Knights Delivery
 
 export const CATS = {
-  food:     { name: 'Food',     icon: 'fa-solid fa-burger',      cls: 'food',     desktop_icon: 'fa-burger' },
-  supplies: { name: 'Supplies', icon: 'fa-solid fa-backpack',    cls: 'supplies', desktop_icon: 'fa-backpack' },
-  errands:  { name: 'Errands',  icon: 'fa-solid fa-person-running', cls: 'errands', desktop_icon: 'fa-person-running' },
-  printing: { name: 'Printing', icon: 'fa-solid fa-print',       cls: 'printing', desktop_icon: 'fa-print' },
+  food:     { name: 'Food',     icon: 'fa-solid fa-burger',         cls: 'food',     desktop_icon: 'burger' },
+  supplies: { name: 'Supplies', icon: 'fa-solid fa-pen-ruler',      cls: 'supplies', desktop_icon: 'pen-ruler' },
+  errands:  { name: 'Errands',  icon: 'fa-solid fa-person-running', cls: 'errands',  desktop_icon: 'person-running' },
+  printing: { name: 'Printing', icon: 'fa-solid fa-print',          cls: 'printing', desktop_icon: 'print' },
 };
 
 export const STAGES = [
   { label: 'Request posted',   sub: 'We received your request' },
   { label: 'Courier accepted', sub: '{courier} will pick up your order' },
-  { label: 'Picked up',        sub: 'On the way to the drop-off point' },
-  { label: 'On the way',       sub: 'Heading to {dropoff}' },
-  { label: 'Arriving soon',    sub: 'Courier is near the drop-off point' },
+  { label: 'Arriving soon',    sub: 'Courier is heading to {dropoff}' },
   { label: 'Delivered',        sub: 'Enjoy! Please rate your courier' },
 ];
 
@@ -31,7 +29,6 @@ export const COURIER = {
   initials: 'JD',
   rating: '4.9',
   deliveries: '1,248',
-  vehicle: 'Honda Click · MC 4821',
 };
 
 export const TIME_OPTIONS = [
@@ -43,21 +40,19 @@ export const TIME_OPTIONS = [
 export const FEE_BASE = { food: 25, supplies: 20, errands: 30, printing: 15 };
 
 export const FAQ_ITEMS = [
-  { q: 'How is the delivery fee calculated?', a: 'Fees start at ₱15–₱30 based on category and distance within campus. Express delivery adds ₱15.' },
-  { q: 'How does the Delivery PIN work?', a: 'A unique 4-digit PIN is shown on your tracking screen. Show it to the courier at handoff to confirm delivery.' },
+  { q: 'How is the delivery fee calculated?', a: 'Fees start at ₱15–₱30 based on category and distance within campus.' },
   { q: 'Can I cancel my order?', a: 'Yes — free cancellation until a courier accepts your request. After acceptance, a ₱10 cancellation fee may apply.' },
   { q: 'What if my item is wrong or missing?', a: 'Tap "Report issue" on your order screen. Our support team responds within 2 minutes, 8am–8pm.' },
 ];
 
 export const DEFAULT_STATE = () => ({
-  user: { fullName: 'Jude Jude', first: 'Jude', email: 'jude@adnu.edu.ph', sid: '2023-10482', phone: '+63 917 555 4821' },
+  user: { fullName: 'Juan Dela Cruz', first: 'Juan', email: 'juandelacruz@adnu.edu.ph', sid: '2023-10482', phone: '+63 917 555 4821' },
   role: 'student',
   dark: false,
   push: true,
   orderUpdates: true,
   loggedIn: false,
   promoDismissed: false,
-  pinHidden: true,
   reqTab: 'ongoing',
   actTab: 'all',
   courierSubTab: 'available',
@@ -75,9 +70,9 @@ export const DEFAULT_STATE = () => ({
       dropoff: 'Santos Hall Room S104',
       fee: 30, tip: 15,
       student: 'Maria Santos', sid: '2022-11093', phone: '+63 918 333 4819',
-      time: '5 mins ago', etaWalk: '4 min walk',
+      time: '5 mins ago',
       notes: 'Please ask for extra gravy. Thank you!',
-      pin: '3912', status: 'finding', stage: 0,
+      status: 'finding', stage: 0,
     },
     {
       id: 'KD-2435',
@@ -87,10 +82,10 @@ export const DEFAULT_STATE = () => ({
       pickup: 'ADNU Bookstore (Student Center)',
       dropoff: 'Phelan P217 Lab (2nd Floor)',
       fee: 25, tip: 10,
-      student: 'Carlo Gomez', sid: '2023-04812', phone: '+63 920 444 8812',
-      time: '12 mins ago', etaWalk: '3 min walk',
+      student: 'Juan Dela Cruz', sid: '2023-04812', phone: '+63 920 444 8812',
+      time: '12 mins ago',
       notes: "I'm in the lab until 5pm.",
-      pin: '6824', status: 'finding', stage: 0,
+      status: 'finding', stage: 0,
     },
   ],
   courierTripsLog: [
@@ -100,20 +95,17 @@ export const DEFAULT_STATE = () => ({
     { id: 'KD-2327', title: "Bam-Bam's Order",  cat: 'food',     pickup: "Bam-Bam's Canteen", dropoff: 'Xavier Hall Lobby',   time: '2:35 PM',  fee: 30, tip: 0  },
   ],
   orders: [
-    { id: 'KD-2419', cat: 'printing', items: 'Photocopy (10 pages)', pickup: 'Print Hub, Phelan', dropoff: 'Phelan P217 Lab', status: 'on_way',    stage: 3, fee: 20, tip: 0,  time: '4:01 PM', pin: '7341' },
-    { id: 'KD-2402', cat: 'food',     items: "2x Lechon Manok Combo, 1 Iced Tea", pickup: "Bam-Bam's Canteen", dropoff: 'Library 3rd Floor', status: 'delivered', stage: 5, fee: 30, tip: 20, time: '12:14 PM', pin: '5281' },
-    { id: 'KD-2381', cat: 'supplies', items: 'Notebook & Pens Set', pickup: 'ADNU Bookstore', dropoff: 'Phelan P217 Lab', status: 'delivered', stage: 5, fee: 20, tip: 0, time: '5:31 PM', pin: '4418' },
-    { id: 'KD-2312', cat: 'errands',  items: 'Claim documents from Registrar', pickup: "Registrar's Office", dropoff: 'Xavier Hall Lobby', status: 'cancelled', stage: 0, fee: 30, tip: 0, time: 'Sep 20', pin: '1234' },
+    { id: 'KD-2419', cat: 'printing', items: 'Photocopy (10 pages)', pickup: 'Print Hub, Phelan', dropoff: 'Phelan P217 Lab', status: 'arriving',  stage: 2, fee: 20, tip: 0,  time: '4:01 PM' },
+    { id: 'KD-2402', cat: 'food',     items: "2x Lechon Manok Combo, 1 Iced Tea", pickup: "Bam-Bam's Canteen", dropoff: 'Library 3rd Floor', status: 'delivered', stage: 3, fee: 30, tip: 20, time: '12:14 PM' },
+    { id: 'KD-2381', cat: 'supplies', items: 'Notebook & Pens Set', pickup: 'ADNU Bookstore', dropoff: 'Phelan P217 Lab', status: 'delivered', stage: 3, fee: 20, tip: 0, time: '5:31 PM' },
+    { id: 'KD-2312', cat: 'errands',  items: 'Claim documents from Registrar', pickup: "Registrar's Office", dropoff: 'Xavier Hall Lobby', status: 'cancelled', stage: 0, fee: 30, tip: 0, time: 'Sep 20' },
   ],
   addresses: [
     { t: 'Phelan P217 Lab (2nd Floor)', s: 'College of Computer Studies', def: true },
     { t: 'Library 3rd Floor', s: 'Learning Commons' },
     { t: 'Xavier Hall Lobby', s: 'Ground Floor' },
   ],
-  defaultPayment: 'GCash',
-  supportMsgs: [
-    { from: 'them', text: "Hi! You're chatting with Knight Support. How can we help you today?", time: '9:38 AM' },
-  ],
+  defaultPayment: 'Cash',
   chat: [
     { from: 'them', text: "Hi! This is Juan, your Knights courier. I'll pick up your order shortly.", time: '3:54 PM' },
     { from: 'them', text: "I'm near Phelan, going up to the 2nd floor!", time: '4:01 PM' },

@@ -1,13 +1,12 @@
-import { useState } from 'react';
 import { CATS } from '../data.js';
 
-export default function HomePage({ state, onNavigate, onDismissPromo }) {
-  const { user, orders = [], promoDismissed } = state;
+export default function HomePage({ state, onNavigate }) {
+  const { user, orders = [] } = state;
   const recentOrders = orders.slice(0, 3);
 
   const categoryCards = [
     { cat: 'food',     label: 'Food',     sub: 'Meals, snacks & drinks',    icon: 'fa-burger' },
-    { cat: 'supplies', label: 'Supplies', sub: 'School & personal items',   icon: 'fa-backpack' },
+    { cat: 'supplies', label: 'Supplies', sub: 'School & personal items',   icon: 'fa-pen-ruler' },
     { cat: 'errands',  label: 'Errands',  sub: 'Pickups & quick tasks',     icon: 'fa-person-running' },
     { cat: 'printing', label: 'Printing', sub: 'Print, copy & thesis',      icon: 'fa-print' },
   ];
@@ -37,7 +36,7 @@ export default function HomePage({ state, onNavigate, onDismissPromo }) {
       {/* Greeting */}
       <div className="greetrow">
         <div>
-          <h1 id="homeGreet">Hey {user.first} 👋</h1>
+          <h1 id="homeGreet">Hey, {user.first || 'Juan'} 👋</h1>
           <div className="locline">
             <i className="fa-solid fa-location-dot" />
             Ateneo De Naga University
@@ -46,10 +45,9 @@ export default function HomePage({ state, onNavigate, onDismissPromo }) {
       </div>
 
       {/* Search bar */}
-      <button className="hero-search" id="homeSearch" onClick={() => onNavigate('search')}>
+      <button className="hero-search" id="homeSearch" onClick={() => onNavigate('create')}>
         <i className="fa-solid fa-magnifying-glass" />
-        What do you need? Try "lechon manok" or "photocopy"
-        <kbd>Ctrl K</kbd>
+        What do you need? Tap to create a request
       </button>
 
       {/* Category grid */}
@@ -66,21 +64,6 @@ export default function HomePage({ state, onNavigate, onDismissPromo }) {
       <div className="cols">
         {/* Left: promo + recent orders */}
         <div>
-          {/* Promo banner */}
-          {!promoDismissed && (
-            <div className="promo" id="homePromo">
-              <button className="pclose" onClick={onDismissPromo} type="button">
-                <i className="fa-solid fa-xmark" style={{ fontSize: 10 }} />
-              </button>
-              <div className="pic"><i className="fa-solid fa-gift" /></div>
-              <div className="grow">
-                <h4>Free delivery on request #1</h4>
-                <p>Use code <b>KNIGHT1</b> at checkout</p>
-              </div>
-              <button className="claim" onClick={() => onNavigate('create')} type="button">Order now</button>
-            </div>
-          )}
-
           {/* Recent orders panel */}
           <div className="panel">
             <div className="panel-head">
@@ -101,10 +84,10 @@ export default function HomePage({ state, onNavigate, onDismissPromo }) {
                 return (
                   <div key={order.id} className="listrow" onClick={() => onNavigate('tracking', order.id)}>
                     <div className={`tile t-${cat?.cls || 'neutral'}`} style={{ width: 44, height: 44 }}>
-                      <i className={`fa-solid fa-${cat?.desktop_icon || 'box'}`} style={{ fontSize: 18 }} />
+                      <i className={`fa-solid fa-${(cat?.desktop_icon || 'box').replace(/^fa-/, '')}`} style={{ fontSize: 18 }} />
                     </div>
                     <div>
-                      <b style={{ fontFamily: 'var(--font-display)', fontSize: 14.5, color: 'var(--ink)' }}>
+                      <b style={{ display: 'block', fontFamily: 'var(--font-display)', fontSize: 14.5, color: 'var(--ink)', marginBottom: 3 }}>
                         {order.items}
                       </b>
                       <div className={`status ${statusCls[order.status]}`}>
@@ -119,48 +102,6 @@ export default function HomePage({ state, onNavigate, onDismissPromo }) {
                 );
               })
             )}
-          </div>
-        </div>
-
-        {/* Right: live card + help */}
-        <div>
-          {/* Live order card if active */}
-          {orders.find(o => ['finding','accepted','picked','on_way','arriving'].includes(o.status)) && (() => {
-            const live = orders.find(o => ['finding','accepted','picked','on_way','arriving'].includes(o.status));
-            return (
-              <div className="trackcard" style={{ marginBottom: 20 }}>
-                <div className="tk-top">
-                  <b>Active order</b>
-                  <span className="livechip">
-                    <span className="pulse-dot" />
-                    LIVE
-                  </span>
-                </div>
-                <div className="tk-eta">~18 min</div>
-                <p className="tk-sub">{live.items}</p>
-                <div className="progress"><i style={{ width: '55%' }} /></div>
-                <div className="tk-btns">
-                  <button className="tk-main" onClick={() => onNavigate('tracking', live.id)}>
-                    <i className="fa-solid fa-person-running" /> Track Live
-                  </button>
-                  <button className="tk-ghost">
-                    <i className="fa-solid fa-comment" />
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Help panel */}
-          <div className="panel">
-            <div className="panel-head"><h2>Need help?</h2></div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 14 }}>
-              Chat with Knight Support, call the hotline, or browse FAQs — we're here 8am to 8pm.
-            </p>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="minibtn primary" style={{ flex: 1, padding: '11px 16px' }}>Chat with support</button>
-              <button className="minibtn" style={{ padding: '11px 16px' }}>FAQs</button>
-            </div>
           </div>
         </div>
       </div>

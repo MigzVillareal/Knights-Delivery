@@ -35,15 +35,7 @@ export default function ActivityPage({ state }) {
     { icon: 'fa-box',          bg: 'var(--navy-tint)',    color: 'var(--navy-soft)',  label: 'Total Orders',  value: orders.length, delta: '+2 this week' },
     { icon: 'fa-circle-check', bg: 'var(--ok-bg)',        color: 'var(--ok)',         label: 'Completed',     value: orders.filter(o => o.status === 'delivered').length, delta: '' },
     { icon: 'fa-peso-sign',    bg: 'var(--yellow-pale)',  color: 'var(--yellow-ink)', label: 'Total Spent',   value: `₱${orders.reduce((acc, o) => acc + (o.fee || 0), 0)}`, delta: '' },
-    { icon: 'fa-star',         bg: 'var(--info-bg)',      color: 'var(--info)',       label: 'Avg Rating',    value: '4.9 ★', delta: '' },
   ];
-
-  // Bar chart data
-  const barData = [
-    { day: 'M', val: 2 }, { day: 'T', val: 1 }, { day: 'W', val: 3 },
-    { day: 'T', val: 2 }, { day: 'F', val: 4, today: true }, { day: 'S', val: 1 }, { day: 'S', val: 0 },
-  ];
-  const maxVal = Math.max(...barData.map(b => b.val), 1);
 
   return (
     <section className="page active" id="page-activity">
@@ -61,29 +53,6 @@ export default function ActivityPage({ state }) {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Chart card */}
-      <div className="panel chartcard" id="chartPanel">
-        <div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)', marginBottom: 8 }}>
-            Orders this week
-          </div>
-          <div className="barchart">
-            {barData.map((b, i) => (
-              <div key={i} className={`bar${b.today ? ' today' : ''}`}>
-                <em>{b.val}</em>
-                <i style={{ height: `${(b.val / maxVal) * 100}%` }} />
-                <small>{b.day}</small>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="chartmeta">
-          <p style={{ color: 'var(--muted)', fontWeight: 700, fontSize: 12, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>This week</p>
-          <div className="bigline">13 orders</div>
-          <p>₱520 spent · 4 categories</p>
-        </div>
       </div>
 
       {/* Tabs */}

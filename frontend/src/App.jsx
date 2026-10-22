@@ -16,8 +16,6 @@ import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import BottomNav from './components/BottomNav.jsx';
 
-// Interactive Overlays & Drawers
-import SearchModal from './components/SearchModal.jsx';
 import NotifsDrawer from './components/NotifsDrawer.jsx';
 import ChatDrawer from './components/ChatDrawer.jsx';
 
@@ -25,9 +23,9 @@ export default function App() {
   const [state, setState] = useState(() => DEFAULT_STATE());
   const [page, setPage] = useState('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [notifsOpen, setNotifsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatRecipient, setChatRecipient] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', icon: 'fa-circle-check' });
 
   // Sync dark mode class on document body
@@ -49,10 +47,6 @@ export default function App() {
 
   // Navigation handler
   function handleNavigate(targetPage, subTab) {
-    if (targetPage === 'search') {
-      setSearchOpen(true);
-      return;
-    }
     setPage(targetPage);
     if (subTab) {
       setState(s => ({ ...s, courierSubTab: subTab }));
@@ -116,7 +110,6 @@ export default function App() {
       fee: orderData.fee || 25,
       tip: 0,
       time: 'Just now',
-      pin: String(Math.floor(1000 + Math.random() * 9000)),
       notes: orderData.notes,
     };
 
@@ -133,9 +126,7 @@ export default function App() {
       sid: state.user.sid,
       phone: state.user.phone,
       time: 'Just now',
-      etaWalk: '3 min walk',
       notes: orderData.notes || 'Please handle with care.',
-      pin: newOrder.pin,
       status: 'finding',
       stage: 0,
     };
@@ -172,6 +163,11 @@ export default function App() {
     showToast('Profile updated successfully!', 'fa-circle-check');
   }
 
+  function handleOpenChat(recipientInfo) {
+    setChatRecipient(recipientInfo || null);
+    setChatOpen(true);
+  }
+
   // Chat message send
   function handleSendMessage(text) {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -182,13 +178,19 @@ export default function App() {
       chat: [...(s.chat || []), newMsg],
     }));
 
-    // Simulate friendly courier automated response
+    // Simulate response
     setTimeout(() => {
-      const replies = [
+      const studentReplies = [
+        "Thank you! I'm waiting near the room.",
+        "Got it, thanks for updating!",
+        "See you soon!",
+      ];
+      const courierReplies = [
         "Got it! I'm on it right now.",
         "Almost there, heading up the stairs!",
         "Thanks for the update, see you in a minute!",
       ];
+      const replies = chatRecipient?.isCourierMode ? studentReplies : courierReplies;
       const reply = replies[Math.floor(Math.random() * replies.length)];
       const courierTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
       setState(s => ({
@@ -205,16 +207,6 @@ export default function App() {
       notifs: (s.notifs || []).map(n => ({ ...n, read: true })),
     }));
     showToast('All notifications marked as read', 'fa-check-double');
-  }
-
-  // Promo dismissal
-  function handleDismissPromo() {
-    setState(s => ({ ...s, promoDismissed: true }));
-  }
-
-  // Select item from quick search
-  function handleSelectSearch(item) {
-    setPage('create');
   }
 
   return (
@@ -253,7 +245,6 @@ export default function App() {
               onNavigate={handleNavigate}
               onRoleSwitch={handleRoleSwitch}
               onToggleSidebar={() => setSidebarOpen(s => !s)}
-              onOpenSearch={() => setSearchOpen(true)}
               onOpenNotifs={() => setNotifsOpen(true)}
             />
 
@@ -263,7 +254,6 @@ export default function App() {
                 <HomePage
                   state={state}
                   onNavigate={handleNavigate}
-                  onDismissPromo={handleDismissPromo}
                 />
               )}
 
@@ -291,7 +281,7 @@ export default function App() {
               {page === 'tracking' && (
                 <TrackingPage
                   state={state}
-                  onOpenChat={() => setChatOpen(true)}
+                  onOpenChat={() => handleOpenChat(null)}
                 />
               )}
 
@@ -308,6 +298,7 @@ export default function App() {
                   state={state}
                   onUpdate={handleUpdateCourier}
                   onNavigate={handleNavigate}
+                  onOpenChat={handleOpenChat}
                 />
               )}
             </main>
@@ -321,13 +312,6 @@ export default function App() {
               onRoleSwitch={handleRoleSwitch}
             />
           </div>
-
-          {/* Quick Search Modal (Ctrl + K or Search button) */}
-          <SearchModal
-            isOpen={searchOpen}
-            onClose={() => setSearchOpen(false)}
-            onSelectSearch={handleSelectSearch}
-          />
 
           {/* Notifications Drawer */}
           <NotifsDrawer
@@ -343,6 +327,7 @@ export default function App() {
             onClose={() => setChatOpen(false)}
             chatMessages={state.chat}
             onSendMessage={handleSendMessage}
+            recipient={chatRecipient}
           />
         </div>
       )}

@@ -17,7 +17,6 @@ export default function Topbar({
   onNavigate,
   onRoleSwitch,
   onToggleSidebar,
-  onOpenSearch,
   onOpenNotifs,
 }) {
   const meta = PAGE_META[page] || PAGE_META.home;
@@ -59,13 +58,6 @@ export default function Topbar({
             <span className="toggle-text">Student View</span>
           </button>
         )}
-
-        {/* Search pill / button */}
-        <button className="searchpill" onClick={onOpenSearch} type="button" aria-label="Search">
-          <i className="fa-solid fa-magnifying-glass" />
-          <span className="searchpill-text">What do you need?</span>
-          <kbd>Ctrl K</kbd>
-        </button>
 
         {/* Bell Notifications */}
         <button

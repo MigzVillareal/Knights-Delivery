@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { CATS, STAGES, COURIER } from '../data.js';
 
 export default function TrackingPage({ state, onOpenChat }) {
-  const [pinHidden, setPinHidden] = useState(true);
   const orders = state.orders || [];
   const activeOrder = orders.find(o => ['finding','accepted','picked','on_way','arriving'].includes(o.status))
     || orders[0];
@@ -20,18 +18,15 @@ export default function TrackingPage({ state, onOpenChat }) {
   }
 
   const cat = CATS[activeOrder.cat];
-  const stageIdx = activeOrder.stage ?? 3;
-  const pin = activeOrder.pin || '7341';
-  const eta = 18;
+  const stageIdx = activeOrder.stage ?? 0;
 
-  const STEP_ICONS = ['fa-inbox', 'fa-user', 'fa-box', 'fa-person-running', 'fa-location-dot', 'fa-circle-check'];
+  const STEP_ICONS = ['fa-inbox', 'fa-user', 'fa-location-dot', 'fa-circle-check'];
 
   return (
     <section className="page active" id="page-tracking">
       <div className="trackgrid">
         {/* Left column */}
         <div>
-          {/* Hero tracking card */}
           <div className="trackcard" id="tr-hero">
             <div className="tk-top">
               <b>{activeOrder.id} · {cat?.name}</b>
@@ -40,22 +35,18 @@ export default function TrackingPage({ state, onOpenChat }) {
                 LIVE
               </span>
             </div>
-            <div className="tk-eta">~{eta} min</div>
-            <p className="tk-sub">ETA: arriving soon at {activeOrder.dropoff}</p>
+            <div className="tk-eta">{STAGES[stageIdx]?.label || 'On the way'}</div>
+            <p className="tk-sub">Delivering to {activeOrder.dropoff}</p>
             <div className="progress">
               <i style={{ width: `${((stageIdx + 1) / STAGES.length) * 100}%` }} />
             </div>
             <div className="tk-btns">
-              <button className="tk-main" onClick={onOpenChat} type="button">
+              <button className="tk-main" onClick={onOpenChat} type="button" style={{ width: '100%' }}>
                 <i className="fa-solid fa-comment" /> Chat with courier
-              </button>
-              <button className="tk-ghost" type="button" onClick={() => window.open(`tel:${activeOrder.phone || '09175554821'}`)}>
-                <i className="fa-solid fa-phone" />
               </button>
             </div>
           </div>
 
-          {/* Journey steps */}
           <div className="panel" style={{ marginBottom: 18 }}>
             <div className="jhead">
               <h2>Live journey</h2>
@@ -84,14 +75,21 @@ export default function TrackingPage({ state, onOpenChat }) {
             </div>
             <div className="feedline" id="tr-feed">
               <i className="fa-solid fa-star" />
-              <span>Courier is near your drop-off point</span>
+              <span>
+                {stageIdx === 3
+                  ? 'Order delivered successfully!'
+                  : stageIdx === 2
+                  ? `Courier is heading to ${activeOrder.dropoff}`
+                  : stageIdx === 1
+                  ? `${COURIER.name} has accepted your order`
+                  : 'Finding an active student courier nearby'}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Right column */}
         <div>
-          {/* Courier card */}
           <div className="panel" style={{ marginBottom: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div className="avatar" style={{ width: 56, height: 56, position: 'relative' }}>
@@ -102,37 +100,16 @@ export default function TrackingPage({ state, onOpenChat }) {
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)' }}>
                   {COURIER.name} <span style={{ fontSize: 13, color: 'var(--yellow-ink)' }}>★ {COURIER.rating}</span>
                 </h3>
-                <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>{COURIER.vehicle}</p>
+                <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>Knight Courier</p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <button className="minibtn" style={{ flex: 1, padding: '10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} type="button">
-                <i className="fa-solid fa-phone" /> Call
-              </button>
-              <button className="minibtn primary" style={{ flex: 1, padding: '10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} type="button">
-                <i className="fa-solid fa-comment" /> Chat
+            <div style={{ marginTop: 14 }}>
+              <button className="minibtn primary" onClick={onOpenChat} style={{ width: '100%', padding: '10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} type="button">
+                <i className="fa-solid fa-comment" /> Chat with courier
               </button>
             </div>
           </div>
 
-          {/* PIN Card */}
-          <div className="pin-card" id="tr-pin">
-            <div className="pic"><i className="fa-solid fa-shield-halved" /></div>
-            <div className="grow">
-              <h4>Delivery PIN</h4>
-              <p>Show this to your courier at handoff</p>
-            </div>
-            <div className="pindigits" id="tr-pindigits">
-              {(pinHidden ? '••••' : pin).split('').map((d, i) => (
-                <b key={i}>{d}</b>
-              ))}
-            </div>
-            <button className="eyebtn" onClick={() => setPinHidden(v => !v)} id="tr-pineye" type="button">
-              <i className={`fa-solid fa-${pinHidden ? 'eye' : 'eye-slash'}`} />
-            </button>
-          </div>
-
-          {/* Order summary */}
           <div className="panel" id="tr-summary">
             <div className="panel-head"><h2>Order summary</h2></div>
             <div style={{ marginTop: 8 }}>
@@ -152,16 +129,6 @@ export default function TrackingPage({ state, onOpenChat }) {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Actions */}
-          <div id="tr-actions" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
-            <button className="btn btn-primary btn-sm" type="button" style={{ width: 'auto' }}>
-              <i className="fa-solid fa-circle-check" /> Confirm delivery
-            </button>
-            <button className="btn btn-soft" type="button" style={{ borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 18px', fontSize: 14 }}>
-              <i className="fa-solid fa-triangle-exclamation" /> Report an issue
-            </button>
           </div>
         </div>
       </div>
