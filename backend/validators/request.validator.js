@@ -81,6 +81,27 @@ export const validateCreateRequest = (body) => {
 
 export const validateRequestId = (id) => UUID_PATTERN.test(id || '');
 
+export const validateLifecycleAction = (body) => {
+  if (!isObject(body)) return issue('body', 'Must be a JSON object.');
+  const unknown = Object.keys(body).find((key) => key !== 'action');
+  if (unknown) return issue(unknown, 'Field is not allowed.');
+  if (!['start', 'mark_delivered'].includes(body.action)) {
+    return issue('action', 'Must be start or mark_delivered.');
+  }
+  return { value: { action: body.action } };
+};
+
+export const validateIssueReport = (body) => {
+  if (!isObject(body)) return issue('body', 'Must be a JSON object.');
+  const unknown = Object.keys(body).find((key) => !['reason', 'description'].includes(key));
+  if (unknown) return issue(unknown, 'Field is not allowed.');
+  const reason = requiredText(body.reason, 'reason', 100);
+  if (reason.error) return reason;
+  const description = optionalText(body.description, 'description', 1000);
+  if (description.error) return description;
+  return { value: { reason: reason.value, description: description.value } };
+};
+
 export const validateRequestListQuery = (query) => {
   const limitValue = query.limit === undefined ? '20' : query.limit;
   if (typeof limitValue !== 'string' || !/^\d+$/.test(limitValue)) {

@@ -62,6 +62,13 @@ export const createSupabaseApi = (config, fetchImpl = fetch) => {
           code: 'SUPABASE_ACCESS_DENIED'
         });
       }
+      if (data?.code === 'P0001') {
+        const isTransition = data.message === 'Action is not allowed from the current state';
+        throw new SupabaseApiError('Request state does not allow this action.', {
+          status: 409,
+          code: isTransition ? 'INVALID_TRANSITION' : 'REQUEST_NOT_AVAILABLE'
+        });
+      }
       throw new SupabaseApiError('Supabase request failed.');
     }
     return data;
@@ -137,6 +144,73 @@ export const createSupabaseApi = (config, fetchImpl = fetch) => {
       const rows = await request(`/rest/v1/requests?${query}`, { token });
       if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid request response.');
       return rows[0] || null;
+    },
+
+    async submitRunnerApplication(token) {
+      const rows = await request('/rest/v1/rpc/submit_runner_application', { token, method: 'POST', body: {} });
+      if (!Array.isArray(rows) || !rows[0]) throw new SupabaseApiError('Supabase returned an invalid application response.');
+      return rows[0];
+    },
+
+    async getRunnerApplication(userId, token) {
+      const query = new URLSearchParams({ select: 'user_id,status,created_at,updated_at', user_id: `eq.${userId}`, limit: '1' });
+      const rows = await request(`/rest/v1/runner_applications?${query}`, { token });
+      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid application response.');
+      return rows[0] || null;
+    },
+
+    async listRunnerOpenRequests(token, { limit, cursor }) {
+      const rows = await request('/rest/v1/rpc/list_runner_open_requests', {
+        token, method: 'POST', body: {
+          p_limit: limit,
+          p_before_created_at: cursor?.createdAt ?? null,
+          p_before_id: cursor?.id ?? null
+        }
+      });
+      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid runner queue response.');
+      return rows;
+    },
+
+    async listRunnerAssignedRequests(token, { limit, cursor }) {
+      const rows = await request('/rest/v1/rpc/list_runner_assigned_requests', {
+        token, method: 'POST', body: {
+          p_limit: limit,
+          p_before_created_at: cursor?.createdAt ?? null,
+          p_before_id: cursor?.id ?? null
+        }
+      });
+      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid assigned request response.');
+      return rows;
+    },
+
+    async acceptRequest(token, requestId) {
+      const rows = await request('/rest/v1/rpc/accept_delivery_request', { token, method: 'POST', body: { p_request_id: requestId } });
+      if (!Array.isArray(rows) || !rows[0]) throw new SupabaseApiError('Supabase returned an invalid acceptance response.');
+      return rows[0];
+    },
+
+    async advanceRequest(token, requestId, action) {
+      const rows = await request('/rest/v1/rpc/advance_delivery_request', {
+        token, method: 'POST', body: { p_request_id: requestId, p_action: action }
+      });
+      if (!Array.isArray(rows) || !rows[0]) throw new SupabaseApiError('Supabase returned an invalid lifecycle response.');
+      return rows[0];
+    },
+
+    async reportRequestIssue(token, requestId, reason, description) {
+      const rows = await request('/rest/v1/rpc/report_delivery_issue', {
+        token, method: 'POST', body: { p_request_id: requestId, p_reason: reason, p_description: description }
+      });
+      if (!Array.isArray(rows) || !rows[0]) throw new SupabaseApiError('Supabase returned an invalid issue response.');
+      return rows[0];
+    },
+
+    async listRequestEvents(requestId, token) {
+      const rows = await request('/rest/v1/rpc/list_delivery_request_events', {
+        token, method: 'POST', body: { p_request_id: requestId }
+      });
+      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid history response.');
+      return rows;
     }
   });
 };

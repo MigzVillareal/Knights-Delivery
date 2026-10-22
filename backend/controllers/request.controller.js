@@ -1,5 +1,5 @@
-import { createOwnRequest, getOwnRequest, listOwnRequests } from '../services/request.service.js';
-import { validateCreateRequest, validateRequestId, validateRequestListQuery } from '../validators/request.validator.js';
+import { advanceRunnerRequest, createOwnRequest, getOwnRequest, getRequestHistory, listOwnRequests, reportRequestIssue } from '../services/request.service.js';
+import { validateCreateRequest, validateIssueReport, validateLifecycleAction, validateRequestId, validateRequestListQuery } from '../validators/request.validator.js';
 
 const validationError = (issue) => {
   const error = new Error('Request validation failed.');
@@ -41,4 +41,37 @@ export const getRequest = async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
+};
+
+const validateActionRequest = (req, next, validator) => {
+  if (!validateRequestId(req.params.requestId)) return next(validationError({ field: 'requestId', message: 'Must be a valid request ID.' }));
+  const result = validator(req.body);
+  if (result.error) return next(validationError(result.error));
+  return result.value;
+};
+
+export const postLifecycleAction = async (req, res, next) => {
+  const value = validateActionRequest(req, next, validateLifecycleAction);
+  if (!value) return;
+  try {
+    const request = await advanceRunnerRequest(req.supabaseApi, req.auth.userId, req.auth.accessToken, req.params.requestId, value.action);
+    return res.json({ data: request });
+  } catch (error) { return next(error); }
+};
+
+export const postIssue = async (req, res, next) => {
+  const value = validateActionRequest(req, next, validateIssueReport);
+  if (!value) return;
+  try {
+    const request = await reportRequestIssue(req.supabaseApi, req.auth.userId, req.auth.accessToken, req.params.requestId, value);
+    return res.json({ data: request });
+  } catch (error) { return next(error); }
+};
+
+export const getRequestEvents = async (req, res, next) => {
+  if (!validateRequestId(req.params.requestId)) return next(validationError({ field: 'requestId', message: 'Must be a valid request ID.' }));
+  try {
+    const events = await getRequestHistory(req.supabaseApi, req.params.requestId, req.auth.accessToken);
+    return res.json({ data: events });
+  } catch (error) { return next(error); }
 };
