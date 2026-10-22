@@ -1,4 +1,5 @@
 const PROFILE_COLUMNS = 'id,display_name,phone,created_at,updated_at';
+const REQUEST_COLUMNS = 'id,customer_id,assigned_runner_id,category,item_details,pickup_address,pickup_instructions,dropoff_address,dropoff_instructions,handoff_note,customer_estimate_minor,customer_estimate_currency,status,created_at,updated_at';
 
 export class SupabaseApiError extends Error {
   constructor(message, { status = 503, code = 'SUPABASE_UNAVAILABLE' } = {}) {
@@ -97,6 +98,45 @@ export const createSupabaseApi = (config, fetchImpl = fetch) => {
         throw new SupabaseApiError('Supabase returned an invalid profile response.');
       }
       return rows[0];
+    },
+
+    async createRequest(token, payload) {
+      const rows = await request('/rest/v1/rpc/create_customer_request', {
+        token,
+        method: 'POST',
+        body: payload
+      });
+      if (!Array.isArray(rows) || !rows[0]) {
+        throw new SupabaseApiError('Supabase returned an invalid request response.');
+      }
+      return rows[0];
+    },
+
+    async listRequests(userId, token, { limit, cursor }) {
+      const query = new URLSearchParams({
+        select: REQUEST_COLUMNS,
+        customer_id: `eq.${userId}`,
+        order: 'created_at.desc,id.desc',
+        limit: String(limit + 1)
+      });
+      if (cursor) {
+        query.set('or', `(created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id}))`);
+      }
+      const rows = await request(`/rest/v1/requests?${query}`, { token });
+      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid request list.');
+      return rows;
+    },
+
+    async getRequest(userId, token, requestId) {
+      const query = new URLSearchParams({
+        select: REQUEST_COLUMNS,
+        id: `eq.${requestId}`,
+        customer_id: `eq.${userId}`,
+        limit: '1'
+      });
+      const rows = await request(`/rest/v1/requests?${query}`, { token });
+      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid request response.');
+      return rows[0] || null;
     }
   });
 };

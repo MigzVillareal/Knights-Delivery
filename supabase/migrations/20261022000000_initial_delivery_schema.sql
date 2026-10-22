@@ -19,15 +19,26 @@ create table public.requests (
   handoff_note text,
   customer_estimate_minor bigint,
   customer_estimate_currency text,
-  status text not null default 'open'
-    check (status in ('open', 'accepted', 'in_progress', 'delivered', 'completed', 'cancelled', 'issue_reported', 'resolved')),
+  status text not null default 'awaiting_policy'
+    check (status in ('awaiting_policy', 'open', 'accepted', 'in_progress', 'delivered', 'completed', 'cancelled', 'issue_reported', 'resolved')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (customer_estimate_minor is null or customer_estimate_minor >= 0),
+  check (category = btrim(category) and category ~ '^[a-z][a-z0-9_-]*$'),
+  check (item_details = btrim(item_details)),
+  check (pickup_address = btrim(pickup_address)),
+  check (dropoff_address = btrim(dropoff_address)),
+  check (char_length(btrim(category)) between 1 and 40),
+  check (char_length(btrim(item_details)) between 1 and 2000),
+  check (char_length(btrim(pickup_address)) between 1 and 500),
+  check (char_length(btrim(dropoff_address)) between 1 and 500),
+  check (pickup_instructions is null or char_length(pickup_instructions) <= 1000),
+  check (dropoff_instructions is null or char_length(dropoff_instructions) <= 1000),
+  check (handoff_note is null or char_length(handoff_note) <= 1000),
   check (
     (customer_estimate_minor is null and customer_estimate_currency is null)
     or (customer_estimate_minor is not null and customer_estimate_currency is not null
-      and char_length(customer_estimate_currency) = 3)
+      and customer_estimate_currency ~ '^[A-Z]{3}$')
   )
 );
 
@@ -72,7 +83,7 @@ alter table public.request_events enable row level security;
 
 revoke all on table public.profiles, public.requests, public.request_events from anon, authenticated;
 grant select, insert, update on table public.profiles to authenticated;
-grant select, insert on table public.requests to authenticated;
+grant select on table public.requests to authenticated;
 grant select on table public.request_events to authenticated;
 
 create policy profiles_select_own
@@ -92,14 +103,6 @@ create policy requests_select_own
   on public.requests for select to authenticated
   using (customer_id = (select auth.uid()));
 
-create policy requests_insert_own
-  on public.requests for insert to authenticated
-  with check (
-    customer_id = (select auth.uid())
-    and assigned_runner_id is null
-    and status = 'open'
-  );
-
 create policy request_events_select_own
   on public.request_events for select to authenticated
   using (
@@ -110,3 +113,51 @@ create policy request_events_select_own
         and r.customer_id = (select auth.uid())
     )
   );
+
+create function public.create_customer_request(
+  p_category text,
+  p_item_details text,
+  p_pickup_address text,
+  p_pickup_instructions text,
+  p_dropoff_address text,
+  p_dropoff_instructions text,
+  p_handoff_note text,
+  p_customer_estimate_minor bigint,
+  p_customer_estimate_currency text
+)
+returns setof public.requests
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  created_request public.requests;
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication required' using errcode = '42501';
+  end if;
+
+  insert into public.profiles (id)
+  values ((select auth.uid()))
+  on conflict (id) do nothing;
+
+  insert into public.requests (
+    customer_id, category, item_details, pickup_address, pickup_instructions,
+    dropoff_address, dropoff_instructions, handoff_note,
+    customer_estimate_minor, customer_estimate_currency, status
+  ) values (
+    (select auth.uid()), p_category, p_item_details, p_pickup_address, p_pickup_instructions,
+    p_dropoff_address, p_dropoff_instructions, p_handoff_note,
+    p_customer_estimate_minor, p_customer_estimate_currency, 'awaiting_policy'
+  ) returning * into created_request;
+
+  insert into public.request_events (request_id, actor_id, event_type, to_status)
+  values (created_request.id, (select auth.uid()), 'request_created', 'awaiting_policy');
+
+  return next created_request;
+end;
+$$;
+revoke all on function public.create_customer_request(text, text, text, text, text, text, text, bigint, text)
+  from public, anon;
+grant execute on function public.create_customer_request(text, text, text, text, text, text, text, bigint, text)
+  to authenticated;

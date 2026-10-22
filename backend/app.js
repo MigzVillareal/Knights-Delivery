@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { createHealthRouter } from './routes/health.routes.js';
 import { createProfileRouter } from './routes/profile.routes.js';
+import { createRequestRouter } from './routes/request.routes.js';
 import { createSupabaseApi } from './services/supabase-api.js';
 import { requestContext } from './middleware/request-context.js';
 import { requestLogger } from './middleware/request-logger.js';
@@ -34,6 +35,7 @@ export const createApp = (config, { supabaseApi = createSupabaseApi(config) } = 
 
   app.use('/api/v1', createHealthRouter());
   app.use('/api/v1', createProfileRouter({ supabaseApi }));
+  app.use('/api/v1', createRequestRouter({ supabaseApi }));
   app.use(notFoundHandler);
   app.use(errorHandler);
 

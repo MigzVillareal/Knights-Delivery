@@ -8,7 +8,7 @@
 4. Start the API using `npm run dev` or `npm start`.
 5. Check `GET http://localhost:5000/api/v1/health` for a secret-free health response. `GET /` remains available for compatibility.
 
-The API currently exposes the health check and own-profile endpoints; customer request and runner workflows are not implemented yet. Do not add secrets to `.env.example` or commit `.env`.
+The API currently exposes health, own-profile, and customer request endpoints. Runner workflows are not implemented yet. Do not add secrets to `.env.example` or commit `.env`.
 
 ## Environment variables
 

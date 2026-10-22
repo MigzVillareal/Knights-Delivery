@@ -15,7 +15,8 @@ export const errorHandler = (error, req, res, _next) => {
     ? 'An unexpected server error occurred.'
     : status === 404 ? 'The requested resource was not found.'
       : status === 413 ? 'Request body exceeds the configured limit.'
-        : 'Request could not be processed.';
+        : status === 422 ? 'Some fields need attention.'
+          : 'Request could not be processed.';
 
   logEvent('http.error', {
     requestId: req.requestId,
@@ -23,11 +24,16 @@ export const errorHandler = (error, req, res, _next) => {
     code
   }, status >= 500 ? 'error' : 'info');
 
+  const errorPayload = {
+    code,
+    message,
+    requestId: req.requestId
+  };
+  if (Array.isArray(error.details)) errorPayload.details = error.details;
+
   res.status(status).json({
     error: {
-      code,
-      message,
-      requestId: req.requestId
+      ...errorPayload
     }
   });
 };
