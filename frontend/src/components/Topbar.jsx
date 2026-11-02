@@ -20,8 +20,7 @@ export default function Topbar({
   onOpenNotifs,
 }) {
   const meta = PAGE_META[page] || PAGE_META.home;
-  const { availableOrders = [], notifs = [] } = state;
-  const openCount = availableOrders.filter(o => o.status === 'finding').length;
+  const { notifs = [] } = state;
   const unreadCount = notifs.filter(n => !n.read).length;
 
   return (
@@ -44,20 +43,6 @@ export default function Topbar({
       </div>
 
       <div className="top-actions">
-        {/* Role toggle button */}
-        {role === 'student' && (
-          <button className="top-role-toggle" onClick={() => onRoleSwitch('courier')} type="button">
-            <span className="pulse-badge" />
-            <span className="toggle-text">Switch to Courier</span>
-            {openCount > 0 && <span className="role-badge">{openCount}</span>}
-          </button>
-        )}
-        {role === 'courier' && (
-          <button className="top-role-toggle" onClick={() => onRoleSwitch('student')} type="button">
-            <i className="fa-solid fa-graduation-cap" />
-            <span className="toggle-text">Student View</span>
-          </button>
-        )}
 
         {/* Bell Notifications */}
         <button

@@ -104,12 +104,12 @@ export default function CreatePage({ state, onSubmit }) {
               />
             </div>
             {/* Quick chips */}
-            <div className="chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 9, marginTop: 10 }}>
+            <div className="chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, maxWidth: '100%' }}>
               {DROP_CHIPS.map(chip => (
                 <button
                   key={chip}
                   className="chip-soft"
-                  style={{ background: 'var(--bg-soft)', border: '1.5px solid var(--line)', borderRadius: 999, padding: '9px 16px', fontSize: 13, fontWeight: 800, color: 'var(--text-2)', cursor: 'pointer' }}
+                  style={{ background: 'var(--bg-soft)', border: '1.5px solid var(--line)', borderRadius: 999, padding: '8px 14px', fontSize: 12.5, fontWeight: 800, color: 'var(--text-2)', cursor: 'pointer', maxWidth: '100%' }}
                   onClick={() => setDrop(chip)}
                   type="button"
                 >
@@ -210,7 +210,7 @@ export default function CreatePage({ state, onSubmit }) {
       {showCatSheet && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(14,12,36,.5)', backdropFilter: 'blur(2px)' }}
           onClick={() => setShowCatSheet(false)}>
-          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'var(--surface)', borderRadius: 24, padding: '24px 24px 28px', width: 380, maxWidth: '95vw', boxShadow: 'var(--shadow-pop)' }}
+          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'var(--surface)', borderRadius: 24, padding: '24px 20px 28px', width: 'calc(100vw - 32px)', maxWidth: 380, boxSizing: 'border-box', boxShadow: 'var(--shadow-pop)' }}
             onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 19, color: 'var(--ink)', marginBottom: 16 }}>Select category</h2>
             {catOptions.map(opt => (
@@ -231,7 +231,7 @@ export default function CreatePage({ state, onSubmit }) {
       {showTimeSheet && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(14,12,36,.5)', backdropFilter: 'blur(2px)' }}
           onClick={() => setShowTimeSheet(false)}>
-          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'var(--surface)', borderRadius: 24, padding: '24px 24px 28px', width: 380, maxWidth: '95vw', boxShadow: 'var(--shadow-pop)' }}
+          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'var(--surface)', borderRadius: 24, padding: '24px 20px 28px', width: 'calc(100vw - 32px)', maxWidth: 380, boxSizing: 'border-box', boxShadow: 'var(--shadow-pop)' }}
             onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 19, color: 'var(--ink)', marginBottom: 16 }}>Preferred time</h2>
             {TIME_OPTIONS.map((opt, i) => (

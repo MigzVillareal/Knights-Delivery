@@ -118,15 +118,6 @@ export default function Sidebar({
                 {item.badge && <span className="sidecount">{item.badge}</span>}
               </button>
             ))}
-            <button
-              className="side-item"
-              onClick={() => handleRole('student')}
-              style={{ color: 'var(--navy-soft)' }}
-              type="button"
-            >
-              <i className="fa-solid fa-rotate" />
-              <span>Switch to Student</span>
-            </button>
           </nav>
         )}
 
