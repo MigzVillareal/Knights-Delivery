@@ -48,7 +48,7 @@ export default function App() {
   // Navigation handler
   function handleNavigate(targetPage, subTab) {
     setPage(targetPage);
-    if (subTab) {
+    if (targetPage === 'courier' && subTab) {
       setState(s => ({ ...s, courierSubTab: subTab }));
     }
     setSidebarOpen(false);

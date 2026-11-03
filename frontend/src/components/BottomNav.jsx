@@ -17,7 +17,7 @@ export default function BottomNav({ page, role, state, onNavigate, onRoleSwitch 
     return (
       <nav className="navpill" aria-label="Mobile Navigation">
         {items.map(item => {
-          const isActive = page === item.id;
+          const isActive = page === item.id || (page === 'tracking' && item.id === 'requests');
           return (
             <button
               key={item.id}
