@@ -63,7 +63,7 @@ export default function App() {
       showToast('Switched to Courier View 🛵', 'fa-motorcycle');
     } else {
       setPage('home');
-      showToast('Switched to Student View 🎓', 'fa-graduation-cap');
+      showToast('Switched to Student View', 'fa-check');
     }
     setSidebarOpen(false);
   }
@@ -309,7 +309,6 @@ export default function App() {
               role={state.role}
               state={state}
               onNavigate={handleNavigate}
-              onRoleSwitch={handleRoleSwitch}
             />
           </div>
 

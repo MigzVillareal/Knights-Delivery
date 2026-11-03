@@ -73,7 +73,7 @@ export default function Sidebar({
             onClick={() => handleRole('student')}
             type="button"
           >
-            <i className="fa-solid fa-graduation-cap" /> Student
+            Student
           </button>
           <button
             className={`role-btn${role === 'courier' ? ' active' : ''}`}

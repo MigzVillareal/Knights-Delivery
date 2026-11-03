@@ -1,6 +1,6 @@
 // Mobile / Tablet Bottom Navigation Bar (Dynamic for mobile view)
 
-export default function BottomNav({ page, role, state, onNavigate, onRoleSwitch }) {
+export default function BottomNav({ page, role, state, onNavigate }) {
   const { orders = [], availableOrders = [] } = state;
   const ongoingCount = orders.filter(o => ['finding', 'accepted', 'picked', 'on_way', 'arriving'].includes(o.status)).length;
   const openCourierCount = availableOrders.filter(o => o.status === 'finding').length;
@@ -43,7 +43,6 @@ export default function BottomNav({ page, role, state, onNavigate, onRoleSwitch 
     { id: 'courier', sub: 'available', icon: 'fa-star', label: 'Available', badge: openCourierCount > 0 ? openCourierCount : null },
     { id: 'courier', sub: 'active', icon: 'fa-person-running', label: 'Active' },
     { id: 'courier', sub: 'earnings', icon: 'fa-wallet', label: 'Earnings' },
-    { id: 'switch', icon: 'fa-graduation-cap', label: 'Student' },
   ];
 
   return (
@@ -54,13 +53,7 @@ export default function BottomNav({ page, role, state, onNavigate, onRoleSwitch 
           <button
             key={idx}
             className={`navitem${isActive ? ' active' : ''}`}
-            onClick={() => {
-              if (item.id === 'switch') {
-                onRoleSwitch('student');
-              } else {
-                onNavigate(item.id, item.sub);
-              }
-            }}
+            onClick={() => onNavigate(item.id, item.sub)}
             type="button"
             aria-label={item.label}
           >
