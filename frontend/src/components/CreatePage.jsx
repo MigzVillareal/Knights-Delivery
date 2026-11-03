@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { CATS, FEE_BASE, TIME_OPTIONS } from '../data.js';
 
+const PICKUP_CHIPS = ["Bam-Bam's Canteen", 'ADNU Bookstore', 'Print Hub, Phelan', 'Science Bldg Canteen', "Xavier Hall"];
 const DROP_CHIPS = ['Phelan P217 Lab', 'Library 3rd Floor', 'Xavier Hall Lobby', 'Santos Hall S104'];
 
 export default function CreatePage({ state, onSubmit }) {
   const [items, setItems] = useState('');
   const [cat, setCat] = useState('');
+  const [pickup, setPickup] = useState("Bam-Bam's Canteen");
+  const [pickupInstructions, setPickupInstructions] = useState('');
   const [drop, setDrop] = useState('');
+  const [dropInstructions, setDropInstructions] = useState('');
   const [notes, setNotes] = useState('');
   const [payment, setPayment] = useState('Cash');
   const [timeIdx, setTimeIdx] = useState(0);
@@ -20,6 +24,7 @@ export default function CreatePage({ state, onSubmit }) {
     const e = {};
     if (!items.trim()) e.items = 'Tell us what to get or do.';
     if (!cat) e.cat = 'Please pick a category.';
+    if (!pickup.trim()) e.pickup = 'Where should the courier pick this up?';
     if (!drop.trim()) e.drop = 'Where should we deliver it?';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -27,9 +32,20 @@ export default function CreatePage({ state, onSubmit }) {
 
   function handlePost() {
     if (!validate()) return;
-    onSubmit({ items, cat, drop, notes, payment, time: TIME_OPTIONS[timeIdx] });
+    onSubmit({
+      items,
+      cat,
+      pickup,
+      pickupInstructions,
+      drop,
+      dropInstructions,
+      notes,
+      payment,
+      time: TIME_OPTIONS[timeIdx],
+      fee,
+    });
     // reset
-    setItems(''); setCat(''); setDrop(''); setNotes('');
+    setItems(''); setCat(''); setDrop(''); setDropInstructions(''); setNotes('');
   }
 
   const catInfo = CATS[cat];
@@ -88,6 +104,36 @@ export default function CreatePage({ state, onSubmit }) {
               </div>
               <i className="fa-solid fa-chevron-down" style={{ color: 'var(--muted)', fontSize: 18 }} />
             </div>
+          </div>
+
+          {/* Pickup location (required by backend) */}
+          <div className="field">
+            <label>Pickup location <span className="req">*</span></label>
+            <div className="inputwrap">
+              <span className="lead"><i className="fa-solid fa-store" /></span>
+              <input
+                className={`input has-lead${errors.pickup ? ' invalid' : ''}`}
+                id="cs-pickup"
+                placeholder="e.g Bam-Bam's Canteen (Science Bldg)"
+                value={pickup}
+                onChange={e => { setPickup(e.target.value); setErrors(er => ({ ...er, pickup: '' })); }}
+              />
+            </div>
+            {/* Quick pickup chips */}
+            <div className="chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, maxWidth: '100%' }}>
+              {PICKUP_CHIPS.map(chip => (
+                <button
+                  key={chip}
+                  className="chip-soft"
+                  style={{ background: 'var(--bg-soft)', border: '1.5px solid var(--line)', borderRadius: 999, padding: '8px 14px', fontSize: 12.5, fontWeight: 800, color: 'var(--text-2)', cursor: 'pointer', maxWidth: '100%' }}
+                  onClick={() => setPickup(chip)}
+                  type="button"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+            {errors.pickup && <div className="hint show">{errors.pickup}</div>}
           </div>
 
           {/* Drop-off */}

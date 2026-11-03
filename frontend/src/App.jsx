@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_STATE } from './data.js';
+import { fetchRequests, createRequest, fetchOpenQueue } from './api/index.js';
 
 // Modular Page Components
 import GatePage from './components/GatePage.jsx';
@@ -96,31 +97,79 @@ export default function App() {
     showToast('Signed out of Knights Delivery', 'fa-arrow-right-from-bracket');
   }
 
-  // Create Order Submission
-  function handleCreateOrder(orderData) {
-    const newId = `KD-${Math.floor(2440 + Math.random() * 50)}`;
-    const newOrder = {
-      id: newId,
-      cat: orderData.cat,
-      items: orderData.items,
-      pickup: "Bam-Bam's Canteen",
-      dropoff: orderData.drop,
-      status: 'finding',
-      stage: 0,
-      fee: orderData.fee || 25,
-      tip: 0,
-      time: 'Just now',
-      notes: orderData.notes,
-    };
+  // Load remote requests when available
+  const loadRequests = useCallback(async () => {
+    setState(s => ({ ...s, loadingRequests: true, requestsError: null }));
+    try {
+      const remoteOrders = await fetchRequests();
+      if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
+        setState(s => ({ ...s, orders: remoteOrders, loadingRequests: false }));
+      } else {
+        setState(s => ({ ...s, loadingRequests: false }));
+      }
+    } catch (err) {
+      // If server is not running or unauthenticated, keep existing orders without crashing
+      setState(s => ({
+        ...s,
+        loadingRequests: false,
+        requestsError: err.isNetworkError ? null : (err.message || 'Could not connect to server'),
+      }));
+    }
+  }, []);
+
+  // Fetch requests on mount or when navigating to requests tab
+  useEffect(() => {
+    if (state.loggedIn && page === 'requests') {
+      loadRequests();
+    }
+  }, [state.loggedIn, page, loadRequests]);
+
+  // Create Order Submission (Calls backend API with local state fallback)
+  async function handleCreateOrder(orderData) {
+    let newOrder = null;
+    let newId = `KD-${Math.floor(2440 + Math.random() * 50)}`;
+
+    try {
+      const created = await createRequest({
+        category: orderData.cat,
+        itemDetails: orderData.items,
+        pickupAddress: orderData.pickup || "Bam-Bam's Canteen",
+        pickupInstructions: orderData.pickupInstructions || null,
+        dropoffAddress: orderData.drop,
+        dropoffInstructions: orderData.dropInstructions || null,
+        handoffNote: orderData.notes || null,
+        customerEstimate: {
+          amountMinor: (orderData.fee || 25) * 100,
+          currency: 'PHP',
+        },
+      });
+      newOrder = created;
+      newId = created.id;
+    } catch {
+      // Backend not running / demo mode fallback
+      newOrder = {
+        id: newId,
+        cat: orderData.cat,
+        items: orderData.items,
+        pickup: orderData.pickup || "Bam-Bam's Canteen",
+        dropoff: orderData.drop,
+        status: 'finding',
+        stage: 0,
+        fee: orderData.fee || 25,
+        tip: 0,
+        time: 'Just now',
+        notes: orderData.notes,
+      };
+    }
 
     const newCourierAvailable = {
       id: newId,
-      title: orderData.cat === 'food' ? "Bam-Bam's Canteen" : `${orderData.cat.toUpperCase()} Request`,
+      title: orderData.cat === 'food' ? (orderData.pickup || "Bam-Bam's Canteen") : `${orderData.cat.toUpperCase()} Request`,
       cat: orderData.cat,
       items: orderData.items,
-      pickup: "Bam-Bam's Canteen (Science Bldg)",
+      pickup: orderData.pickup || "Bam-Bam's Canteen (Science Bldg)",
       dropoff: orderData.drop,
-      fee: newOrder.fee,
+      fee: newOrder.fee || 25,
       tip: 10,
       student: state.user.fullName,
       sid: state.user.sid,
@@ -268,6 +317,7 @@ export default function App() {
                 <RequestsPage
                   state={state}
                   onNavigate={handleNavigate}
+                  onRefresh={loadRequests}
                 />
               )}
 

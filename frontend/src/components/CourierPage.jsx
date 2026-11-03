@@ -91,7 +91,21 @@ export default function CourierPage({ state, onUpdate, onNavigate, onOpenChat })
             <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>Orders ready for pickup around ADNU campus</p>
           </div>
           <div id="c-available-list">
-            {availableOrders.filter(o => o.status === 'finding').length === 0 ? (
+            {state.loadingCourierQueue ? (
+              <div className="emptydesk" style={{ padding: '48px 20px' }}>
+                <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: 'var(--yellow-ink)', marginBottom: 14 }} />
+                <h3>Scanning campus radar...</h3>
+                <p>Checking for open delivery orders</p>
+              </div>
+            ) : state.courierQueueError ? (
+              <div className="emptydesk">
+                <div className="esi" style={{ background: '#fee2e2' }}>
+                  <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444' }} />
+                </div>
+                <h3>Unable to load queue</h3>
+                <p>{state.courierQueueError}</p>
+              </div>
+            ) : availableOrders.filter(o => o.status === 'finding').length === 0 ? (
               <div className="emptydesk">
                 <div className="esi"><i className="fa-solid fa-radar" style={{ fontSize: 28 }} /></div>
                 <h3>No orders nearby</h3>

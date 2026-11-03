@@ -27,7 +27,7 @@ const STATUS_CLS = {
   cancelled: 'st-cancelled',
 };
 
-export default function RequestsPage({ state, onNavigate }) {
+export default function RequestsPage({ state, onNavigate, onRefresh }) {
   const [tab, setTab] = useState('ongoing');
   const orders = state.orders || [];
 
@@ -44,7 +44,26 @@ export default function RequestsPage({ state, onNavigate }) {
       </div>
 
       <div className="panel" id="reqList">
-        {filtered.length === 0 ? (
+        {state.loadingRequests ? (
+          <div className="emptydesk" style={{ padding: '48px 20px' }}>
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: 'var(--yellow-ink)', marginBottom: 14 }} />
+            <h3>Loading requests...</h3>
+            <p>Fetching your latest delivery updates</p>
+          </div>
+        ) : state.requestsError ? (
+          <div className="emptydesk">
+            <div className="esi" style={{ background: '#fee2e2' }}>
+              <i className="fa-solid fa-triangle-exclamation" style={{ color: '#ef4444' }} />
+            </div>
+            <h3>Unable to connect</h3>
+            <p>{state.requestsError}</p>
+            {onRefresh && (
+              <button className="btn btn-primary btn-sm" onClick={onRefresh} style={{ marginTop: 14 }} type="button">
+                <i className="fa-solid fa-rotate-right" /> Retry
+              </button>
+            )}
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="emptydesk">
             <div className="esi">
               <i className={`fa-solid ${tab === 'ongoing' ? 'fa-box-open' : tab === 'completed' ? 'fa-circle-check' : 'fa-circle-xmark'}`} />
