@@ -48,7 +48,7 @@ export default function App() {
   // Navigation handler
   function handleNavigate(targetPage, subTab) {
     setPage(targetPage);
-    if (subTab) {
+    if (targetPage === 'courier' && subTab) {
       setState(s => ({ ...s, courierSubTab: subTab }));
     }
     setSidebarOpen(false);
@@ -60,10 +60,10 @@ export default function App() {
     setState(s => ({ ...s, role: newRole }));
     if (newRole === 'courier') {
       setPage('courier');
-      showToast('Switched to Courier View 🛵', 'fa-motorcycle');
+      showToast('Switched to Courier View ', 'fa-motorcycle');
     } else {
       setPage('home');
-      showToast('Switched to Student View 🎓', 'fa-graduation-cap');
+      showToast('Switched to Student View', 'fa-check');
     }
     setSidebarOpen(false);
   }
@@ -71,7 +71,7 @@ export default function App() {
   // Dark Mode Toggle
   function handleThemeToggle() {
     setState(s => ({ ...s, dark: !s.dark }));
-    showToast(!state.dark ? 'Dark mode enabled 🌙' : 'Light mode enabled ☀️', 'fa-circle-half-stroke');
+    showToast(!state.dark ? 'Dark mode enabled' : 'Light mode enabled', 'fa-circle-half-stroke');
   }
 
   // Auth: Login / Signup

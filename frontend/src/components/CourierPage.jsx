@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { CATS } from '../data.js';
 
 export default function CourierPage({ state, onUpdate, onNavigate, onOpenChat }) {
-  const [subTab, setSubTab] = useState('available');
+  const subTab = state.courierSubTab || 'available';
   const { courierOnline, courierEarnings, courierTrips, availableOrders = [], courierTripsLog = [], activeCourierOrderId } = state;
 
   function toggleOnline() {
@@ -14,7 +13,7 @@ export default function CourierPage({ state, onUpdate, onNavigate, onOpenChat })
       activeCourierOrderId: orderId,
       availableOrders: availableOrders.map(o => o.id === orderId ? { ...o, status: 'accepted', stage: 1 } : o),
     });
-    setSubTab('active');
+    onNavigate('courier', 'active');
   }
 
   function declineOrder(orderId) {
@@ -71,15 +70,15 @@ export default function CourierPage({ state, onUpdate, onNavigate, onOpenChat })
 
       {/* Sub-tabs */}
       <div className="courier-tabs" id="courierSubTabs">
-        <button className={`courier-tab${subTab === 'available' ? ' active' : ''}`} onClick={() => setSubTab('available')} type="button">
+        <button className={`courier-tab${subTab === 'available' ? ' active' : ''}`} onClick={() => onNavigate('courier', 'available')} type="button">
           <i className="fa-solid fa-star" /> Available Orders
           {openCount > 0 && <span className="c-badge">{openCount}</span>}
         </button>
-        <button className={`courier-tab${subTab === 'active' ? ' active' : ''}`} onClick={() => setSubTab('active')} type="button">
+        <button className={`courier-tab${subTab === 'active' ? ' active' : ''}`} onClick={() => onNavigate('courier', 'active')} type="button">
           <i className="fa-solid fa-person-running" /> Active Delivery
           {activeOrder && <span className="c-badge">1</span>}
         </button>
-        <button className={`courier-tab${subTab === 'earnings' ? ' active' : ''}`} onClick={() => setSubTab('earnings')} type="button">
+        <button className={`courier-tab${subTab === 'earnings' ? ' active' : ''}`} onClick={() => onNavigate('courier', 'earnings')} type="button">
           <i className="fa-solid fa-receipt" /> Earnings &amp; History
         </button>
       </div>
