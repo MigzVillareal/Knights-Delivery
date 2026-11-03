@@ -1,6 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_STATE } from './data.js';
-import { fetchRequests, createRequest, fetchOpenQueue } from './api/index.js';
+import {
+  login as apiLogin,
+  signup as apiSignup,
+  logout as apiLogout,
+} from './api/auth.js';
+import { setStoredToken, getStoredToken } from './api/client.js';
+import { getProfile, updateProfile } from './api/profile.js';
+import {
+  fetchRequests,
+  createRequest,
+  fetchRequestEvents,
+} from './api/requests.js';
+import {
+  fetchOpenQueue,
+  fetchAssignedQueue,
+  acceptRequest,
+  updateLifecycle,
+} from './api/runner.js';
 
 // Modular Page Components
 import GatePage from './components/GatePage.jsx';
@@ -16,7 +33,6 @@ import CourierPage from './components/CourierPage.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import BottomNav from './components/BottomNav.jsx';
-
 import NotifsDrawer from './components/NotifsDrawer.jsx';
 import ChatDrawer from './components/ChatDrawer.jsx';
 
@@ -31,22 +47,16 @@ export default function App() {
 
   // Sync dark mode class on document body
   useEffect(() => {
-    if (state.dark) {
-      document.body.classList.add('dark');
-    } else {
-      document.body.classList.remove('dark');
-    }
+    document.body.classList.toggle('dark', !!state.dark);
   }, [state.dark]);
 
-  // Global Toast helper
+  // ── Toast ──────────────────────────────────────────────────────────────────
   function showToast(message, icon = 'fa-circle-check') {
     setToast({ show: true, message, icon });
-    setTimeout(() => {
-      setToast(t => ({ ...t, show: false }));
-    }, 3200);
+    setTimeout(() => setToast(t => ({ ...t, show: false })), 3200);
   }
 
-  // Navigation handler
+  // ── Navigation ─────────────────────────────────────────────────────────────
   function handleNavigate(targetPage, subTab) {
     setPage(targetPage);
     if (targetPage === 'courier' && subTab) {
@@ -56,84 +66,149 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // Role Switcher
+  // ── Role Switch ────────────────────────────────────────────────────────────
   function handleRoleSwitch(newRole) {
     setState(s => ({ ...s, role: newRole }));
     if (newRole === 'courier') {
       setPage('courier');
-      showToast('Switched to Courier View ', 'fa-motorcycle');
+      showToast('Switched to Courier View 🛵', 'fa-motorcycle');
+      loadCourierQueue();
     } else {
       setPage('home');
-      showToast('Switched to Student View', 'fa-check');
+      showToast('Switched to Student View 🎓', 'fa-graduation-cap');
     }
     setSidebarOpen(false);
   }
 
-  // Dark Mode Toggle
+  // ── Dark Mode ──────────────────────────────────────────────────────────────
   function handleThemeToggle() {
     setState(s => ({ ...s, dark: !s.dark }));
-    showToast(!state.dark ? 'Dark mode enabled' : 'Light mode enabled', 'fa-circle-half-stroke');
+    showToast(!state.dark ? 'Dark mode enabled 🌙' : 'Light mode enabled ☀️', 'fa-circle-half-stroke');
   }
 
-  // Auth: Login / Signup
-  function handleLogin(credentials) {
-    setState(s => ({
-      ...s,
-      loggedIn: true,
-      user: {
-        ...s.user,
+  // ── Auth: Login ────────────────────────────────────────────────────────────
+  async function handleLogin(credentials) {
+    setState(s => ({ ...s, loadingProfile: true }));
+    try {
+      const result = await apiLogin({ email: credentials.email, password: credentials.password });
+      const token = result.access_token;
+      if (token) setStoredToken(token);
+
+      // Fetch real profile from backend
+      let profile = null;
+      try {
+        profile = await getProfile();
+      } catch {
+        // profile endpoint optional during initial setup
+      }
+
+      const displayName = profile?.display_name || credentials.name || credentials.email.split('@')[0];
+      setState(s => ({
+        ...s,
+        loggedIn: true,
+        loadingProfile: false,
+        user: {
+          fullName: displayName,
+          first: displayName.split(' ')[0],
+          email: credentials.email,
+          phone: profile?.phone || '',
+          sid: '',
+        },
+      }));
+      setPage('home');
+      showToast(`Welcome back, ${displayName.split(' ')[0]}! 👋`, 'fa-circle-check');
+    } catch (err) {
+      setState(s => ({ ...s, loadingProfile: false }));
+      showToast(err.message || 'Login failed. Check your credentials.', 'fa-triangle-exclamation');
+    }
+  }
+
+  // ── Auth: Signup ───────────────────────────────────────────────────────────
+  async function handleSignup(credentials) {
+    setState(s => ({ ...s, loadingProfile: true }));
+    try {
+      const result = await apiSignup({
         email: credentials.email,
-        fullName: credentials.name || s.user.fullName,
-        first: (credentials.name || s.user.fullName).split(' ')[0],
-      },
-    }));
-    setPage('home');
-    showToast(`Welcome back, ${(credentials.name || 'Knight').split(' ')[0]}! 👋`, 'fa-circle-check');
+        password: credentials.password,
+        fullName: credentials.name,
+      });
+      const token = result.access_token;
+      if (token) setStoredToken(token);
+
+      const displayName = credentials.name || credentials.email.split('@')[0];
+      setState(s => ({
+        ...s,
+        loggedIn: true,
+        loadingProfile: false,
+        user: {
+          fullName: displayName,
+          first: displayName.split(' ')[0],
+          email: credentials.email,
+          phone: '',
+          sid: '',
+        },
+      }));
+      setPage('home');
+      showToast(`Welcome to Knights Delivery, ${displayName.split(' ')[0]}! 🎓`, 'fa-circle-check');
+    } catch (err) {
+      setState(s => ({ ...s, loadingProfile: false }));
+      showToast(err.message || 'Sign up failed. Please try again.', 'fa-triangle-exclamation');
+    }
   }
 
-  // Auth: Sign Out
+  // ── Auth: Sign Out ─────────────────────────────────────────────────────────
   function handleSignOut() {
-    setState(s => ({ ...s, loggedIn: false }));
+    apiLogout();
+    setState(DEFAULT_STATE());
+    setPage('home');
     showToast('Signed out of Knights Delivery', 'fa-arrow-right-from-bracket');
   }
 
-  // Load remote requests when available
+  // ── Fetch Student Requests ─────────────────────────────────────────────────
   const loadRequests = useCallback(async () => {
     setState(s => ({ ...s, loadingRequests: true, requestsError: null }));
     try {
-      const remoteOrders = await fetchRequests();
-      if (Array.isArray(remoteOrders) && remoteOrders.length > 0) {
-        setState(s => ({ ...s, orders: remoteOrders, loadingRequests: false }));
-      } else {
-        setState(s => ({ ...s, loadingRequests: false }));
-      }
+      const orders = await fetchRequests();
+      setState(s => ({ ...s, orders: Array.isArray(orders) ? orders : [], loadingRequests: false }));
     } catch (err) {
-      // If server is not running or unauthenticated, keep existing orders without crashing
       setState(s => ({
         ...s,
         loadingRequests: false,
-        requestsError: err.isNetworkError ? null : (err.message || 'Could not connect to server'),
+        requestsError: err.message || 'Could not load requests.',
       }));
     }
   }, []);
 
-  // Fetch requests on mount or when navigating to requests tab
-  useEffect(() => {
-    if (state.loggedIn && page === 'requests') {
-      loadRequests();
+  // ── Fetch Courier Open Queue ───────────────────────────────────────────────
+  const loadCourierQueue = useCallback(async () => {
+    setState(s => ({ ...s, loadingCourierQueue: true, courierQueueError: null }));
+    try {
+      const queue = await fetchOpenQueue();
+      setState(s => ({ ...s, availableOrders: Array.isArray(queue) ? queue : [], loadingCourierQueue: false }));
+    } catch (err) {
+      setState(s => ({
+        ...s,
+        loadingCourierQueue: false,
+        courierQueueError: err.message || 'Could not load delivery queue.',
+      }));
     }
-  }, [state.loggedIn, page, loadRequests]);
+  }, []);
 
-  // Create Order Submission (Calls backend API with local state fallback)
+  // ── Fetch on page visit ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!state.loggedIn) return;
+    if (page === 'requests' || page === 'activity') loadRequests();
+    if (page === 'courier') loadCourierQueue();
+  }, [state.loggedIn, page, loadRequests, loadCourierQueue]);
+
+  // ── Create Order ───────────────────────────────────────────────────────────
   async function handleCreateOrder(orderData) {
-    let newOrder = null;
-    let newId = `KD-${Math.floor(2440 + Math.random() * 50)}`;
-
+    setState(s => ({ ...s, loadingRequests: true }));
     try {
       const created = await createRequest({
         category: orderData.cat,
         itemDetails: orderData.items,
-        pickupAddress: orderData.pickup || "Bam-Bam's Canteen",
+        pickupAddress: orderData.pickup,
         pickupInstructions: orderData.pickupInstructions || null,
         dropoffAddress: orderData.drop,
         dropoffInstructions: orderData.dropInstructions || null,
@@ -143,118 +218,113 @@ export default function App() {
           currency: 'PHP',
         },
       });
-      newOrder = created;
-      newId = created.id;
-    } catch {
-      // Backend not running / demo mode fallback
-      newOrder = {
-        id: newId,
-        cat: orderData.cat,
-        items: orderData.items,
-        pickup: orderData.pickup || "Bam-Bam's Canteen",
-        dropoff: orderData.drop,
-        status: 'finding',
-        stage: 0,
-        fee: orderData.fee || 25,
-        tip: 0,
-        time: 'Just now',
-        notes: orderData.notes,
-      };
+
+      setState(s => ({
+        ...s,
+        orders: [created, ...(s.orders || [])],
+        loadingRequests: false,
+        notifs: [
+          {
+            id: Date.now(),
+            type: 'order',
+            title: `Request ${created.id} posted`,
+            body: `Looking for a courier to deliver ${orderData.items.slice(0, 30)}...`,
+            time: 'Just now',
+            read: false,
+          },
+          ...(s.notifs || []),
+        ],
+      }));
+
+      showToast(`Request ${created.id} posted! Finding a courier...`, 'fa-box');
+      setPage('requests');
+    } catch (err) {
+      setState(s => ({ ...s, loadingRequests: false }));
+      showToast(err.message || 'Failed to post request. Try again.', 'fa-triangle-exclamation');
     }
-
-    const newCourierAvailable = {
-      id: newId,
-      title: orderData.cat === 'food' ? (orderData.pickup || "Bam-Bam's Canteen") : `${orderData.cat.toUpperCase()} Request`,
-      cat: orderData.cat,
-      items: orderData.items,
-      pickup: orderData.pickup || "Bam-Bam's Canteen (Science Bldg)",
-      dropoff: orderData.drop,
-      fee: newOrder.fee || 25,
-      tip: 10,
-      student: state.user.fullName,
-      sid: state.user.sid,
-      phone: state.user.phone,
-      time: 'Just now',
-      notes: orderData.notes || 'Please handle with care.',
-      status: 'finding',
-      stage: 0,
-    };
-
-    setState(s => ({
-      ...s,
-      orders: [newOrder, ...(s.orders || [])],
-      availableOrders: [newCourierAvailable, ...(s.availableOrders || [])],
-      notifs: [
-        {
-          id: Date.now(),
-          type: 'order',
-          title: `Request ${newId} posted`,
-          body: `Looking for a courier to deliver ${orderData.items.slice(0, 30)}...`,
-          time: 'Just now',
-          read: false,
-        },
-        ...(s.notifs || []),
-      ],
-    }));
-
-    showToast(`Request ${newId} posted! Finding a courier...`, 'fa-box');
-    setPage('tracking');
   }
 
-  // Courier Actions (accept, advance stage, complete)
+  // ── Courier: Accept Order ──────────────────────────────────────────────────
+  async function handleAcceptOrder(orderId) {
+    try {
+      const updated = await acceptRequest(orderId);
+      setState(s => ({
+        ...s,
+        activeCourierOrderId: orderId,
+        availableOrders: s.availableOrders.filter(o => o.id !== orderId),
+        courierTrips: (s.courierTrips || 0) + 1,
+      }));
+      showToast(`Order ${orderId} accepted! 🛵 Head to the pickup now.`, 'fa-motorcycle');
+      handleNavigate('courier', 'active');
+    } catch (err) {
+      showToast(err.message || 'Could not accept order. Someone may have taken it.', 'fa-triangle-exclamation');
+    }
+  }
+
+  // ── Courier: Advance Delivery Stage ───────────────────────────────────────
+  async function handleAdvanceDelivery(orderId, action) {
+    try {
+      const updated = await updateLifecycle(orderId, action);
+      setState(s => ({
+        ...s,
+        orders: (s.orders || []).map(o => o.id === orderId ? updated : o),
+        availableOrders: (s.availableOrders || []).map(o => o.id === orderId ? updated : o),
+        courierEarnings: action === 'mark_delivered'
+          ? (s.courierEarnings || 0) + (updated.fee || 0)
+          : s.courierEarnings,
+        activeCourierOrderId: action === 'mark_delivered' ? null : s.activeCourierOrderId,
+      }));
+      if (action === 'mark_delivered') {
+        showToast('Delivery completed! Great work 🎉', 'fa-circle-check');
+        handleNavigate('courier', 'earnings');
+      } else {
+        showToast('Status updated!', 'fa-person-running');
+      }
+    } catch (err) {
+      showToast(err.message || 'Could not update delivery stage.', 'fa-triangle-exclamation');
+    }
+  }
+
+  // ── Courier: Generic patch (toggle online, etc.) ───────────────────────────
   function handleUpdateCourier(patch) {
     setState(s => ({ ...s, ...patch }));
   }
 
-  // User Profile Update
-  function handleUpdateUser(patch) {
-    setState(s => ({ ...s, ...patch }));
-    showToast('Profile updated successfully!', 'fa-circle-check');
+  // ── Profile Update ─────────────────────────────────────────────────────────
+  async function handleUpdateUser(patch) {
+    try {
+      const updated = await updateProfile({
+        displayName: patch.user?.fullName,
+        phone: patch.user?.phone,
+      });
+      setState(s => ({
+        ...s,
+        user: {
+          ...s.user,
+          fullName: updated?.display_name || patch.user?.fullName || s.user.fullName,
+          phone: updated?.phone || patch.user?.phone || s.user.phone,
+        },
+      }));
+      showToast('Profile updated successfully!', 'fa-circle-check');
+    } catch (err) {
+      showToast(err.message || 'Profile update failed.', 'fa-triangle-exclamation');
+    }
   }
 
+  // ── Chat ───────────────────────────────────────────────────────────────────
   function handleOpenChat(recipientInfo) {
     setChatRecipient(recipientInfo || null);
     setChatOpen(true);
   }
 
-  // Chat message send
   function handleSendMessage(text) {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    const newMsg = { from: 'me', text, time: timeStr };
-
-    setState(s => ({
-      ...s,
-      chat: [...(s.chat || []), newMsg],
-    }));
-
-    // Simulate response
-    setTimeout(() => {
-      const studentReplies = [
-        "Thank you! I'm waiting near the room.",
-        "Got it, thanks for updating!",
-        "See you soon!",
-      ];
-      const courierReplies = [
-        "Got it! I'm on it right now.",
-        "Almost there, heading up the stairs!",
-        "Thanks for the update, see you in a minute!",
-      ];
-      const replies = chatRecipient?.isCourierMode ? studentReplies : courierReplies;
-      const reply = replies[Math.floor(Math.random() * replies.length)];
-      const courierTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      setState(s => ({
-        ...s,
-        chat: [...(s.chat || []), { from: 'them', text: reply, time: courierTime }],
-      }));
-    }, 1200);
+    setState(s => ({ ...s, chat: [...(s.chat || []), { from: 'me', text, time: timeStr }] }));
   }
 
-  // Mark all notifications read
+  // ── Notifications ──────────────────────────────────────────────────────────
   function handleMarkAllNotifsRead() {
-    setState(s => ({
-      ...s,
-      notifs: (s.notifs || []).map(n => ({ ...n, read: true })),
-    }));
+    setState(s => ({ ...s, notifs: (s.notifs || []).map(n => ({ ...n, read: true })) }));
     showToast('All notifications marked as read', 'fa-check-double');
   }
 
@@ -266,13 +336,10 @@ export default function App() {
         <span>{toast.message}</span>
       </div>
 
-      {/* When user is not logged in: show responsive Gate / Auth page */}
       {!state.loggedIn ? (
-        <GatePage onLogin={handleLogin} />
+        <GatePage onLogin={handleLogin} onSignup={handleSignup} loading={state.loadingProfile} />
       ) : (
-        /* When user is logged in: unified responsive shell (Desktop sidebar + Mobile drawer + Bottom nav) */
         <div className="shell">
-          {/* Responsive Sidebar (desktop sticky / mobile drawer) */}
           <Sidebar
             page={page}
             role={state.role}
@@ -284,9 +351,7 @@ export default function App() {
             onClose={() => setSidebarOpen(false)}
           />
 
-          {/* Main Content Area */}
           <div className="main">
-            {/* Topbar (Desktop header + Mobile header with hamburger menu) */}
             <Topbar
               page={page}
               role={state.role}
@@ -297,20 +362,11 @@ export default function App() {
               onOpenNotifs={() => setNotifsOpen(true)}
             />
 
-            {/* Dynamic Viewport rendering the active page */}
             <main className="viewport">
-              {page === 'home' && (
-                <HomePage
-                  state={state}
-                  onNavigate={handleNavigate}
-                />
-              )}
+              {page === 'home' && <HomePage state={state} onNavigate={handleNavigate} />}
 
               {page === 'create' && (
-                <CreatePage
-                  state={state}
-                  onSubmit={handleCreateOrder}
-                />
+                <CreatePage state={state} onSubmit={handleCreateOrder} />
               )}
 
               {page === 'requests' && (
@@ -322,10 +378,7 @@ export default function App() {
               )}
 
               {page === 'activity' && (
-                <ActivityPage
-                  state={state}
-                  onNavigate={handleNavigate}
-                />
+                <ActivityPage state={state} onNavigate={handleNavigate} />
               )}
 
               {page === 'tracking' && (
@@ -347,13 +400,15 @@ export default function App() {
                 <CourierPage
                   state={state}
                   onUpdate={handleUpdateCourier}
+                  onAccept={handleAcceptOrder}
+                  onAdvance={handleAdvanceDelivery}
                   onNavigate={handleNavigate}
                   onOpenChat={handleOpenChat}
+                  onRefreshQueue={loadCourierQueue}
                 />
               )}
             </main>
 
-            {/* Dynamic Mobile Bottom Navigation Pill (hidden on desktop screens via CSS) */}
             <BottomNav
               page={page}
               role={state.role}
@@ -363,7 +418,6 @@ export default function App() {
             />
           </div>
 
-          {/* Notifications Drawer */}
           <NotifsDrawer
             isOpen={notifsOpen}
             onClose={() => setNotifsOpen(false)}
@@ -371,7 +425,6 @@ export default function App() {
             onMarkAllRead={handleMarkAllNotifsRead}
           />
 
-          {/* Real-time Courier / Student Chat Drawer */}
           <ChatDrawer
             isOpen={chatOpen}
             onClose={() => setChatOpen(false)}

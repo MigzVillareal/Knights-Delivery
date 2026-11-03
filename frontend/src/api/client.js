@@ -2,10 +2,11 @@
 
 const TOKEN_KEY = 'knights_delivery_token';
 
-// Determine the base API URL:
-// 1. Vite environment variable: VITE_API_BASE_URL (set in Vercel or .env)
-// 2. Local fallback: http://localhost:5000/api/v1
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1';
+// Backend is deployed separately from the frontend.
+// Frontend: https://knights-delivery-d2zq.vercel.app
+// Backend:  https://knights-delivery-2dqq.vercel.app
+// Override with VITE_API_BASE_URL env var if the backend URL ever changes.
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://knights-delivery-2dqq.vercel.app/api/v1';
 
 export function getStoredToken() {
   try {
@@ -47,21 +48,6 @@ export async function apiRequest(endpoint, {
   headers = {},
 } = {}) {
   const url = `${API_BASE.replace(/\/$/, '')}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-
-  // On hosted deployments (e.g., Vercel), if no VITE_API_BASE_URL is configured,
-  // skip attempting to reach localhost:5000 and gracefully signal offline mode.
-  const isHostedWithoutBackend =
-    typeof window !== 'undefined' &&
-    window.location.hostname !== 'localhost' &&
-    window.location.hostname !== '127.0.0.1' &&
-    !import.meta.env.VITE_API_BASE_URL;
-
-  if (isHostedWithoutBackend) {
-    const error = new Error('Remote backend URL not configured yet. Running in offline/demo mode.');
-    error.status = 0;
-    error.isNetworkError = true;
-    throw error;
-  }
 
   const requestHeaders = {
     'Content-Type': 'application/json',
