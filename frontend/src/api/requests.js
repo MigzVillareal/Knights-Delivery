@@ -16,42 +16,71 @@ const STATUS_STAGE_MAP = {
  * Normalizes backend request record into the format expected by the frontend UI
  */
 export function normalizeRequest(raw) {
-  if (!raw) return null;
+  if (!raw || typeof raw !== 'object') return null;
 
   const status = raw.status || 'finding';
-  const fee = raw.customer_estimate_minor
-    ? Math.round(raw.customer_estimate_minor / 100)
-    : (raw.fee || 25);
+
+  let rawFee = 25;
+  if (raw.quote?.amountMinor) {
+    rawFee = Math.round(raw.quote.amountMinor / 100);
+  } else if (raw.customer_estimate_minor) {
+    rawFee = Math.round(raw.customer_estimate_minor / 100);
+  } else if (raw.fee) {
+    rawFee = raw.fee;
+  }
+  const fee = Number(rawFee) || 25;
+  const tip = Number(raw.tip) || 0;
 
   let formattedTime = 'Just now';
-  if (raw.created_at) {
+  const createdDate = raw.createdAt || raw.created_at;
+  if (createdDate) {
     try {
-      const d = new Date(raw.created_at);
+      const d = new Date(createdDate);
       formattedTime = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     } catch {
       formattedTime = 'Recent';
     }
   }
 
+  const items = raw.itemSummary || raw.item_summary || raw.item_details || raw.itemDetails || 'Delivery items';
+  const title = raw.title || items;
+
+  let pickup = 'Campus Pickup';
+  if (typeof raw.pickup === 'object' && raw.pickup?.address) {
+    pickup = raw.pickup.address;
+  } else if (raw.pickupArea || raw.pickup_area) {
+    pickup = raw.pickupArea || raw.pickup_area;
+  } else if (raw.pickup_address || raw.pickup) {
+    pickup = raw.pickup_address || raw.pickup;
+  }
+
+  let dropoff = 'Campus Dropoff';
+  if (typeof raw.dropoff === 'object' && raw.dropoff?.address) {
+    dropoff = raw.dropoff.address;
+  } else if (raw.dropoffArea || raw.dropoff_area) {
+    dropoff = raw.dropoffArea || raw.dropoff_area;
+  } else if (raw.dropoff_address || raw.dropoff) {
+    dropoff = raw.dropoff_address || raw.dropoff;
+  }
+
   return {
-    id: raw.id,
+    id: raw.id || `REQ-${Date.now()}`,
+    title,
     cat: raw.category || 'food',
-    items: raw.item_details || raw.itemDetails || 'Delivery items',
-    pickup: typeof raw.pickup === 'object'
-      ? raw.pickup?.address
-      : (raw.pickup_address || raw.pickup || "Campus Canteen"),
-    pickupInstructions: typeof raw.pickup === 'object' ? raw.pickup?.instructions : raw.pickup_instructions,
-    dropoff: typeof raw.dropoff === 'object'
-      ? raw.dropoff?.address
-      : (raw.dropoff_address || raw.dropoff || "Campus Dropoff"),
-    dropoffInstructions: typeof raw.dropoff === 'object' ? raw.dropoff?.instructions : raw.dropoff_instructions,
+    items,
+    pickup,
+    pickupInstructions: typeof raw.pickup === 'object' ? (raw.pickup?.instructions || '') : (raw.pickup_instructions || ''),
+    dropoff,
+    dropoffInstructions: typeof raw.dropoff === 'object' ? (raw.dropoff?.instructions || '') : (raw.dropoff_instructions || ''),
     status,
     stage: STATUS_STAGE_MAP[status] ?? 0,
     fee,
-    tip: raw.tip || 0,
+    tip,
     time: raw.time || formattedTime,
     notes: raw.handoff_note || raw.handoffNote || '',
     runnerId: raw.assigned_runner_id || null,
+    student: raw.customer_name || raw.customer?.name || raw.student || 'Student',
+    phone: raw.customer_phone || raw.customer?.phone || raw.phone || '',
     raw,
   };
 }
@@ -67,75 +96,68 @@ export async function fetchRequests({ limit = 20, cursor } = {}) {
   const endpoint = `/requests${query.toString() ? `?${query.toString()}` : ''}`;
   const response = await apiRequest(endpoint, { method: 'GET' });
   const list = Array.isArray(response) ? response : (response?.data || []);
-  return list.map(normalizeRequest);
+  return list.map(normalizeRequest).filter(Boolean);
 }
 
 /**
- * Fetch a single request by ID
+ * Fetch single request details by ID
  */
 export async function fetchRequestById(requestId) {
   const response = await apiRequest(`/requests/${requestId}`, { method: 'GET' });
-  const raw = response?.data || response;
-  return normalizeRequest(raw);
+  return normalizeRequest(response?.data || response);
 }
 
 /**
  * Create a new delivery request
- * Shapes payload to match backend request.validator.js
  */
 export async function createRequest({
-  category,
+  category = 'food',
   itemDetails,
   pickupAddress,
   pickupInstructions = null,
   dropoffAddress,
   dropoffInstructions = null,
   handoffNote = null,
-  customerEstimate = null,
+  customerEstimate = { amountMinor: 2500, currency: 'PHP' },
 }) {
   const payload = {
-    category: category.toLowerCase().trim(),
-    itemDetails: itemDetails.trim(),
-    pickup: {
-      address: pickupAddress.trim(),
-      instructions: pickupInstructions ? pickupInstructions.trim() : null,
+    category,
+    itemDetails,
+    pickupAddress,
+    dropoffAddress,
+    customerEstimate: {
+      amountMinor: Number(customerEstimate.amountMinor) || 2500,
+      currency: customerEstimate.currency || 'PHP',
     },
-    dropoff: {
-      address: dropoffAddress.trim(),
-      instructions: dropoffInstructions ? dropoffInstructions.trim() : null,
-    },
-    handoffNote: handoffNote ? handoffNote.trim() : null,
   };
 
-  if (customerEstimate) {
-    payload.customerEstimate = customerEstimate;
-  }
+  if (pickupInstructions) payload.pickupInstructions = pickupInstructions;
+  if (dropoffInstructions) payload.dropoffInstructions = dropoffInstructions;
+  if (handoffNote) payload.handoffNote = handoffNote;
 
   const response = await apiRequest('/requests', {
     method: 'POST',
     body: payload,
   });
 
-  const created = response?.data || response;
-  return normalizeRequest(created);
+  return normalizeRequest(response?.data || response);
 }
 
 /**
- * Fetch delivery event tracking history for an order
+ * Fetch request lifecycle events/timeline
  */
 export async function fetchRequestEvents(requestId) {
   const response = await apiRequest(`/requests/${requestId}/events`, { method: 'GET' });
-  return response?.data || response || [];
+  return Array.isArray(response) ? response : (response?.data || []);
 }
 
 /**
- * Report an issue with an active or delivered request
+ * Report an issue on an order
  */
 export async function reportRequestIssue(requestId, { reason, description }) {
   const response = await apiRequest(`/requests/${requestId}/issues`, {
     method: 'POST',
     body: { reason, description },
   });
-  return response?.data || response;
+  return normalizeRequest(response?.data || response);
 }
-

@@ -7,6 +7,10 @@ export const CATS = {
   printing: { name: 'Printing', icon: 'fa-solid fa-print',          cls: 'printing', desktop_icon: 'print' },
 };
 
+export function catCls(cat) {
+  return `t-${CATS[cat]?.cls || 'neutral'}`;
+}
+
 export const STAGES = [
   { label: 'Request posted',   sub: 'We received your request' },
   { label: 'Courier accepted', sub: '{courier} will pick up your order' },

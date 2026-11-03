@@ -33,7 +33,7 @@ export async function fetchOpenQueue({ limit = 20, cursor } = {}) {
   const endpoint = `/runner/requests${query.toString() ? `?${query.toString()}` : ''}`;
   const response = await apiRequest(endpoint, { method: 'GET' });
   const list = Array.isArray(response) ? response : (response?.data || []);
-  return list.map(normalizeRequest);
+  return list.map(normalizeRequest).filter(Boolean);
 }
 
 /**
@@ -47,7 +47,7 @@ export async function fetchAssignedQueue({ limit = 20, cursor } = {}) {
   const endpoint = `/runner/requests/assigned${query.toString() ? `?${query.toString()}` : ''}`;
   const response = await apiRequest(endpoint, { method: 'GET' });
   const list = Array.isArray(response) ? response : (response?.data || []);
-  return list.map(normalizeRequest);
+  return list.map(normalizeRequest).filter(Boolean);
 }
 
 /**
@@ -75,4 +75,3 @@ export async function updateLifecycle(requestId, action) {
   });
   return normalizeRequest(response?.data || response);
 }
-
