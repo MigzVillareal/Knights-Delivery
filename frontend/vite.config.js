@@ -3,4 +3,13 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api/v1': {
+        target: 'https://knights-delivery-2dqq.vercel.app',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
 });

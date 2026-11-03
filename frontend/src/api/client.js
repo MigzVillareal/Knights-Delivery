@@ -2,11 +2,8 @@
 
 const TOKEN_KEY = 'knights_delivery_token';
 
-// Backend is deployed separately from the frontend.
-// Frontend: https://knights-delivery-d2zq.vercel.app
-// Backend:  https://knights-delivery-2dqq.vercel.app
-// Override with VITE_API_BASE_URL env var if the backend URL ever changes.
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://knights-delivery-2dqq.vercel.app/api/v1';
+// API Base URL - defaults to relative /api/v1 (proxied via Vite and Vercel to bypass CORS)
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export function getStoredToken() {
   try {

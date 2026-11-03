@@ -1,18 +1,13 @@
 import { CATS, STATUS_UI } from '../data.js';
 
-// Helper: category tile classes
-function catCls(cat) {
-  return `t-${CATS[cat]?.cls || 'neutral'}`;
-}
-
 // Category icon display
-function CatIcon({ cat, size = 20 }) {
+export function CatIcon({ cat, size = 20 }) {
   const c = CATS[cat];
   return c ? <i className={`fa-solid fa-${c.desktop_icon}`} style={{ fontSize: size }} /> : null;
 }
 
 // Status badge chip
-function StatusBadge({ status }) {
+export function StatusBadge({ status }) {
   const ui = STATUS_UI[status] || STATUS_UI.finding;
   return (
     <span className={`status ${ui.cls}`}>
@@ -23,7 +18,7 @@ function StatusBadge({ status }) {
 }
 
 // Mini toggle switch component
-function Toggle({ on, onChange }) {
+export function Toggle({ on, onChange }) {
   return (
     <button
       className={`toggle${on ? ' on' : ''}`}
@@ -34,5 +29,3 @@ function Toggle({ on, onChange }) {
     />
   );
 }
-
-export { catCls, CatIcon, StatusBadge, Toggle };
