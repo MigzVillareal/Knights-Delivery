@@ -146,19 +146,6 @@ export const createSupabaseApi = (config, fetchImpl = fetch) => {
       return rows[0] || null;
     },
 
-    async submitRunnerApplication(token) {
-      const rows = await request('/rest/v1/rpc/submit_runner_application', { token, method: 'POST', body: {} });
-      if (!Array.isArray(rows) || !rows[0]) throw new SupabaseApiError('Supabase returned an invalid application response.');
-      return rows[0];
-    },
-
-    async getRunnerApplication(userId, token) {
-      const query = new URLSearchParams({ select: 'user_id,status,created_at,updated_at', user_id: `eq.${userId}`, limit: '1' });
-      const rows = await request(`/rest/v1/runner_applications?${query}`, { token });
-      if (!Array.isArray(rows)) throw new SupabaseApiError('Supabase returned an invalid application response.');
-      return rows[0] || null;
-    },
-
     async listRunnerOpenRequests(token, { limit, cursor }) {
       const rows = await request('/rest/v1/rpc/list_runner_open_requests', {
         token, method: 'POST', body: {

@@ -28,8 +28,6 @@ const toRequest = (row) => ({
   updatedAt: row.updated_at
 });
 
-const toApplication = (row) => row ? ({ status: row.status, createdAt: row.created_at, updatedAt: row.updated_at }) : null;
-
 const toEvent = (row) => ({
   id: row.id,
   eventType: row.event_type,
@@ -41,24 +39,7 @@ const toEvent = (row) => ({
 
 const makeError = (status, code, message) => Object.assign(new Error(message), { status, code });
 
-export const getRunnerApplication = async (supabaseApi, userId, token) =>
-  toApplication(await supabaseApi.getRunnerApplication(userId, token));
-
-export const submitRunnerApplication = async (supabaseApi, userId, token) => {
-  const row = await supabaseApi.submitRunnerApplication(token);
-  if (row.user_id !== userId) throw makeError(503, 'SUPABASE_RESPONSE_INVALID', 'Unexpected application owner.');
-  return toApplication(row);
-};
-
-const requireEligibleRunner = async (supabaseApi, userId, token) => {
-  const application = await supabaseApi.getRunnerApplication(userId, token);
-  if (application?.user_id !== userId || application.status !== 'eligible') {
-    throw makeError(403, 'RUNNER_NOT_ELIGIBLE', 'Runner eligibility is required.');
-  }
-};
-
 export const listRunnerOpenRequests = async (supabaseApi, userId, token, { limit, cursor }) => {
-  await requireEligibleRunner(supabaseApi, userId, token);
   const rows = await supabaseApi.listRunnerOpenRequests(token, { limit, cursor });
   return pageResult(rows, limit, (row) => ({
     id: row.id,
@@ -73,7 +54,6 @@ export const listRunnerOpenRequests = async (supabaseApi, userId, token, { limit
 };
 
 export const listRunnerAssignedRequests = async (supabaseApi, userId, token, { limit, cursor }) => {
-  await requireEligibleRunner(supabaseApi, userId, token);
   const rows = await supabaseApi.listRunnerAssignedRequests(token, { limit, cursor });
   if (rows.some((row) => row.assigned_runner_id !== userId)) {
     throw makeError(503, 'SUPABASE_RESPONSE_INVALID', 'Unexpected assigned request owner.');
@@ -82,7 +62,6 @@ export const listRunnerAssignedRequests = async (supabaseApi, userId, token, { l
 };
 
 export const acceptRunnerRequest = async (supabaseApi, userId, token, requestId) => {
-  await requireEligibleRunner(supabaseApi, userId, token);
   const row = await supabaseApi.acceptRequest(token, requestId);
   if (row.assigned_runner_id !== userId || row.id !== requestId || row.status !== 'accepted') {
     throw makeError(503, 'SUPABASE_RESPONSE_INVALID', 'Unexpected acceptance response.');
@@ -91,7 +70,6 @@ export const acceptRunnerRequest = async (supabaseApi, userId, token, requestId)
 };
 
 export const advanceRunnerRequest = async (supabaseApi, userId, token, requestId, action) => {
-  await requireEligibleRunner(supabaseApi, userId, token);
   const row = await supabaseApi.advanceRequest(token, requestId, action);
   if (row.assigned_runner_id !== userId || row.id !== requestId) {
     throw makeError(503, 'SUPABASE_RESPONSE_INVALID', 'Unexpected lifecycle response.');

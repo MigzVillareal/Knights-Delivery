@@ -34,30 +34,22 @@ const withServer = async (app, run) => {
   finally { server.close(); await once(server, 'close'); }
 };
 
-test('runner application is pending until trusted eligibility is set', async () => {
+test('any authenticated user can view the runner queue without an application', async () => {
   const api = {
     async verifyAccessToken() { return { id: runnerOne }; },
-    async submitRunnerApplication() { return { user_id: runnerOne, status: 'pending' }; },
-    async getRunnerApplication() { return { user_id: runnerOne, status: 'pending' }; },
-    async listRunnerOpenRequests() { assert.fail('ineligible queue must not reach storage'); }
+    async listRunnerOpenRequests() { return [{ id: requestId, category: 'food', item_summary: 'Request in food', pickup_area: null, dropoff_area: null, status: 'open', quote: null, created_at: '2026-10-22T07:00:00Z' }]; }
   };
   const app = createApp(testConfig(), { supabaseApi: api });
   await withServer(app, async (baseUrl) => {
-    const submitted = await fetch(`${baseUrl}/api/v1/runner/application`, {
-      method: 'POST', headers: { authorization: 'Bearer runner-token', 'content-type': 'application/json' }, body: '{}'
-    });
-    assert.equal(submitted.status, 201);
-    assert.equal((await submitted.json()).data.status, 'pending');
     const queue = await fetch(`${baseUrl}/api/v1/runner/requests`, { headers: { authorization: 'Bearer runner-token' } });
-    assert.equal(queue.status, 403);
-    assert.equal((await queue.json()).error.code, 'RUNNER_NOT_ELIGIBLE');
+    assert.equal(queue.status, 200);
+    assert.equal((await queue.json()).data[0].id, requestId);
   });
 });
 
 test('open queue uses a restricted projection with no personal or precise request fields', async () => {
   const api = {
     async verifyAccessToken() { return { id: runnerOne }; },
-    async getRunnerApplication() { return { user_id: runnerOne, status: 'eligible' }; },
     async listRunnerOpenRequests() { return [{ id: requestId, category: 'food', item_summary: 'Request in food', pickup_area: null, dropoff_area: null, status: 'open', quote: null, created_at: '2026-10-22T07:00:00Z' }]; }
   };
   const app = createApp(testConfig(), { supabaseApi: api });
@@ -77,7 +69,6 @@ test('atomic acceptance allows one runner and rejects a competing runner', async
   let accepted = false;
   const api = {
     async verifyAccessToken(token) { return { id: token === 'runner-one' ? runnerOne : runnerTwo }; },
-    async getRunnerApplication(userId) { return { user_id: userId, status: 'eligible' }; },
     async acceptRequest(token, id) {
       assert.equal(id, requestId);
       if (accepted) throw Object.assign(new Error('Already accepted.'), { status: 409, code: 'REQUEST_NOT_AVAILABLE' });
@@ -99,7 +90,6 @@ test('runner lifecycle rejects invalid actions and records valid history', async
   const calls = [];
   const api = {
     async verifyAccessToken() { return { id: runnerOne }; },
-    async getRunnerApplication() { return { user_id: runnerOne, status: 'eligible' }; },
     async advanceRequest(_token, id, action) {
       calls.push(action);
       if (action === 'mark_delivered') return row('delivered', runnerOne);
