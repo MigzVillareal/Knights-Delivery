@@ -60,7 +60,7 @@ export default function App() {
     setState(s => ({ ...s, role: newRole }));
     if (newRole === 'courier') {
       setPage('courier');
-      showToast('Switched to Courier View 🛵', 'fa-motorcycle');
+      showToast('Switched to Courier View ', 'fa-motorcycle');
     } else {
       setPage('home');
       showToast('Switched to Student View', 'fa-check');
@@ -71,7 +71,7 @@ export default function App() {
   // Dark Mode Toggle
   function handleThemeToggle() {
     setState(s => ({ ...s, dark: !s.dark }));
-    showToast(!state.dark ? 'Dark mode enabled 🌙' : 'Light mode enabled ☀️', 'fa-circle-half-stroke');
+    showToast(!state.dark ? 'Dark mode enabled' : 'Light mode enabled', 'fa-circle-half-stroke');
   }
 
   // Auth: Login / Signup
@@ -309,6 +309,7 @@ export default function App() {
               role={state.role}
               state={state}
               onNavigate={handleNavigate}
+              onRoleSwitch={handleRoleSwitch}
             />
           </div>
 
