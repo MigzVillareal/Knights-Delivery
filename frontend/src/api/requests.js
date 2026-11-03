@@ -121,19 +121,22 @@ export async function createRequest({
   customerEstimate = { amountMinor: 2500, currency: 'PHP' },
 }) {
   const payload = {
-    category,
-    itemDetails,
-    pickupAddress,
-    dropoffAddress,
+    category: String(category || 'food').toLowerCase().trim(),
+    itemDetails: String(itemDetails || '').trim(),
+    pickup: {
+      address: String(pickupAddress || 'Campus Pickup').trim(),
+      instructions: pickupInstructions ? String(pickupInstructions).trim() : null,
+    },
+    dropoff: {
+      address: String(dropoffAddress || 'Campus Dropoff').trim(),
+      instructions: dropoffInstructions ? String(dropoffInstructions).trim() : null,
+    },
+    handoffNote: handoffNote ? String(handoffNote).trim() : null,
     customerEstimate: {
-      amountMinor: Number(customerEstimate.amountMinor) || 2500,
-      currency: customerEstimate.currency || 'PHP',
+      amountMinor: Math.round(Number(customerEstimate?.amountMinor) || 2500),
+      currency: customerEstimate?.currency || 'PHP',
     },
   };
-
-  if (pickupInstructions) payload.pickupInstructions = pickupInstructions;
-  if (dropoffInstructions) payload.dropoffInstructions = dropoffInstructions;
-  if (handoffNote) payload.handoffNote = handoffNote;
 
   const response = await apiRequest('/requests', {
     method: 'POST',

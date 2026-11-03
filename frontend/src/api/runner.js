@@ -4,6 +4,25 @@ import { apiRequest } from './client.js';
 import { normalizeRequest } from './requests.js';
 
 /**
+ * Fetch runner application status
+ */
+export async function getRunnerApplication() {
+  const response = await apiRequest('/runner/application', { method: 'GET' });
+  return response?.data || response;
+}
+
+/**
+ * Submit an application to become a courier
+ */
+export async function submitRunnerApplication() {
+  const response = await apiRequest('/runner/application', {
+    method: 'POST',
+    body: {},
+  });
+  return response?.data || response;
+}
+
+/**
  * Fetch open available delivery requests for couriers
  */
 export async function fetchOpenQueue({ limit = 20, cursor } = {}) {
