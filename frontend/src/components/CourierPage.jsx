@@ -4,6 +4,16 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
   const subTab = state.courierSubTab || 'available';
   const { courierOnline = true, courierEarnings = 0, courierTrips = 0, availableOrders = [], courierTripsLog = [], activeCourierOrderId } = state;
 
+  const courierUser = state.user || {};
+  const courierName = courierUser.fullName || courierUser.first || 'Knight Courier';
+  const courierInitials = (courierName || 'KC')
+    .split(' ')
+    .filter(Boolean)
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'KC';
+
   function toggleOnline() {
     if (onUpdate) onUpdate({ courierOnline: !courierOnline });
   }
@@ -39,12 +49,12 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
       <div className="courier-hero-card">
         <div className="courier-topline">
           <div className="courier-id">
-            <div className="avatar" style={{ width: 52, height: 52, background: 'var(--yellow)', color: 'var(--navy)', fontSize: 18 }}>
-              JD
+            <div className="avatar" style={{ width: 52, height: 52, background: 'var(--yellow)', color: 'var(--navy)', fontSize: 18, fontWeight: 800 }}>
+              {courierInitials}
               <span className="vbadge"><i className="fa-solid fa-check" /></span>
             </div>
             <div>
-              <h2>Juan Dela Cruz <span style={{ fontSize: 14, color: 'var(--yellow)', fontWeight: 800, verticalAlign: 1 }}>★ 4.9</span></h2>
+              <h2>{courierName} <span style={{ fontSize: 14, color: 'var(--yellow)', fontWeight: 800, verticalAlign: 1 }}>★ 4.9</span></h2>
               <p>Knight Courier · Ateneo de Naga</p>
             </div>
           </div>
