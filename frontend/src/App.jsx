@@ -431,7 +431,7 @@ export default function App() {
     setState(s => ({ ...s, loadingRequests: true }));
     try {
       const pickupLoc = orderData.pickup || orderData.pickupAddress || "Bam-Bam's Canteen";
-      const dropLoc = orderData.drop || orderData.dropoff || orderData.dropoffAddress || "Phelan P217 Lab";
+      const dropLoc = orderData.drop || orderData.dropoff || orderData.dropoffAddress || "Phelan";
 
       const created = await createRequest({
         category: orderData.cat,

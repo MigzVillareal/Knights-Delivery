@@ -5,12 +5,12 @@ import { useState, useEffect } from 'react';
 const POPULAR_SEARCHES = [
   { name: "Lechon Manok (whole)", cat: "food", price: "₱120", shop: "Bam-Bam's Canteen", icon: "fa-burger" },
   { name: "Rice Meal Combo", cat: "food", price: "₱85", shop: "Bam-Bam's Canteen", icon: "fa-burger" },
-  { name: "Iced Latte", cat: "food", price: "₱95", shop: "Xavier Cafe", icon: "fa-mug-hot" },
-  { name: "Notebook & Pens Set", cat: "supplies", price: "₱75", shop: "ADNU Bookstore", icon: "fa-pen-ruler" },
-  { name: "Bond Paper (A4, 100s)", cat: "supplies", price: "₱95", shop: "ADNU Bookstore", icon: "fa-file" },
-  { name: "Photocopy (10 pages)", cat: "printing", price: "₱20", shop: "Print Hub, Phelan", icon: "fa-print" },
-  { name: "Thesis Printing (colored)", cat: "printing", price: "₱150", shop: "Print Hub, Phelan", icon: "fa-print" },
-  { name: "Claim documents", cat: "errands", price: "₱30", shop: "Registrar's Office", icon: "fa-person-running" },
+  { name: "Iced Latte", cat: "food", price: "₱95", shop: "Daily Joe", icon: "fa-mug-hot" },
+  { name: "Snack & Drinks Pack", cat: "food", price: "₱75", shop: "Funhan Mart", icon: "fa-burger" },
+  { name: "School Supplies Kit", cat: "supplies", price: "₱95", shop: "Daily Joe", icon: "fa-file" },
+  { name: "Photocopy (10 pages)", cat: "printing", price: "₱20", shop: "Cyberdome Graphics", icon: "fa-print" },
+  { name: "Thesis Printing (colored)", cat: "printing", price: "₱150", shop: "Cyberdome Graphics", icon: "fa-print" },
+  { name: "Claim documents", cat: "errands", price: "₱30", shop: "Xavier Hall", icon: "fa-person-running" },
 ];
 
 export default function SearchModal({ isOpen, onClose, onSelectSearch }) {

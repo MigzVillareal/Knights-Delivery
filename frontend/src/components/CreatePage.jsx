@@ -1,8 +1,5 @@
 import { useState } from 'react';
-import { CATS, FEE_BASE, TIME_OPTIONS } from '../data.js';
-
-const PICKUP_CHIPS = ["Bam-Bam's Canteen", 'ADNU Bookstore', 'Print Hub, Phelan', 'Science Bldg Canteen', "Xavier Hall"];
-const DROP_CHIPS = ['Phelan P217 Lab', 'Library 3rd Floor', 'Xavier Hall Lobby', 'Santos Hall S104'];
+import { CATS, FEE_BASE, PICKUP_LOCATIONS, DROPOFF_LOCATIONS } from '../data.js';
 
 export default function CreatePage({ state, onSubmit }) {
   const [items, setItems] = useState('');
@@ -13,9 +10,7 @@ export default function CreatePage({ state, onSubmit }) {
   const [dropInstructions, setDropInstructions] = useState('');
   const [notes, setNotes] = useState('');
   const [payment, setPayment] = useState('Cash');
-  const [timeIdx, setTimeIdx] = useState(0);
   const [showCatSheet, setShowCatSheet] = useState(false);
-  const [showTimeSheet, setShowTimeSheet] = useState(false);
   const [errors, setErrors] = useState({});
 
   const fee = cat ? FEE_BASE[cat] : 20;
@@ -41,7 +36,6 @@ export default function CreatePage({ state, onSubmit }) {
       dropInstructions,
       notes,
       payment,
-      time: TIME_OPTIONS[timeIdx],
       fee,
     });
     // reset
@@ -114,14 +108,14 @@ export default function CreatePage({ state, onSubmit }) {
               <input
                 className={`input has-lead${errors.pickup ? ' invalid' : ''}`}
                 id="cs-pickup"
-                placeholder="e.g Bam-Bam's Canteen (Science Bldg)"
+                placeholder="e.g. Bam-Bam's Canteen, Daily Joe, Xavier Hall"
                 value={pickup}
                 onChange={e => { setPickup(e.target.value); setErrors(er => ({ ...er, pickup: '' })); }}
               />
             </div>
             {/* Quick pickup chips */}
             <div className="chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, maxWidth: '100%' }}>
-              {PICKUP_CHIPS.map(chip => (
+              {PICKUP_LOCATIONS.map(chip => (
                 <button
                   key={chip}
                   className="chip-soft"
@@ -144,14 +138,14 @@ export default function CreatePage({ state, onSubmit }) {
               <input
                 className={`input has-lead${errors.drop ? ' invalid' : ''}`}
                 id="cs-drop"
-                placeholder="e.g Phelan P217 Lab (2nd Floor)"
+                placeholder="e.g. Phelan, Alingal, Santos"
                 value={drop}
                 onChange={e => { setDrop(e.target.value); setErrors(er => ({ ...er, drop: '' })); }}
               />
             </div>
             {/* Quick chips */}
             <div className="chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10, maxWidth: '100%' }}>
-              {DROP_CHIPS.map(chip => (
+              {DROPOFF_LOCATIONS.map(chip => (
                 <button
                   key={chip}
                   className="chip-soft"
@@ -164,18 +158,6 @@ export default function CreatePage({ state, onSubmit }) {
               ))}
             </div>
             {errors.drop && <div className="hint show">{errors.drop}</div>}
-          </div>
-
-          {/* Preferred time */}
-          <div className="field">
-            <label>Preferred time <span className="req">*</span></label>
-            <div className="selectrow" onClick={() => setShowTimeSheet(true)}>
-              <div className="tile t-neutral" style={{ width: 42, height: 42, borderRadius: 13 }}>
-                <i className="fa-solid fa-clock" style={{ fontSize: 20 }} />
-              </div>
-              <div className="grow">{TIME_OPTIONS[timeIdx]}</div>
-              <i className="fa-solid fa-chevron-right" style={{ color: 'var(--muted)', fontSize: 18 }} />
-            </div>
           </div>
 
           {/* Notes */}
@@ -267,27 +249,6 @@ export default function CreatePage({ state, onSubmit }) {
                 </span>
                 <div className="grow"><b>{opt.label}</b></div>
                 {cat === opt.id && <i className="fa-solid fa-check" style={{ color: 'var(--navy)', fontSize: 16 }} />}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Time sheet overlay */}
-      {showTimeSheet && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(14,12,36,.5)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setShowTimeSheet(false)}>
-          <div style={{ position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', background: 'var(--surface)', borderRadius: 24, padding: '24px 20px 28px', width: 'calc(100vw - 32px)', maxWidth: 380, boxSizing: 'border-box', boxShadow: 'var(--shadow-pop)' }}
-            onClick={e => e.stopPropagation()}>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 19, color: 'var(--ink)', marginBottom: 16 }}>Preferred time</h2>
-            {TIME_OPTIONS.map((opt, i) => (
-              <div key={opt} className="mrowz" style={{ cursor: 'pointer', padding: '13px 6px' }}
-                onClick={() => { setTimeIdx(i); setShowTimeSheet(false); }}>
-                <span className="tile t-neutral" style={{ width: 44, height: 44 }}>
-                  <i className="fa-solid fa-clock" style={{ fontSize: 20 }} />
-                </span>
-                <div className="grow"><b>{opt}</b></div>
-                {timeIdx === i && <i className="fa-solid fa-check" style={{ color: 'var(--navy)', fontSize: 16 }} />}
               </div>
             ))}
           </div>

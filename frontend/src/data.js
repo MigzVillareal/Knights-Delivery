@@ -45,6 +45,25 @@ export const COURIER = {
   initials: 'KC',
 };
 
+export const PICKUP_LOCATIONS = [
+  "Bam-Bam's Canteen",
+  'Daily Joe',
+  'Funhan Mart',
+  'Xavier Hall',
+  'Cyberdome Graphics',
+  'Canteen (Bonoan)',
+];
+
+export const DROPOFF_LOCATIONS = [
+  'Phelan',
+  'Alingal',
+  'Arrupe',
+  'Xavier Hall',
+  'Covered Court',
+  'Santos',
+  'Bonoan',
+];
+
 export const TIME_OPTIONS = [
   'ASAP (30–45 min)',
   'Today, 6:00pm – 6:30pm',

@@ -43,16 +43,16 @@ export function cacheOrderDetails(id, details) {
 
 const DEFAULT_PICKUPS = {
   food: "Bam-Bam's Canteen",
-  supplies: 'ADNU Bookstore',
-  printing: 'Print Hub, Phelan',
+  supplies: 'Daily Joe',
+  printing: 'Cyberdome Graphics',
   errands: 'Xavier Hall',
 };
 
 const DEFAULT_DROPOFFS = {
-  food: 'Phelan P217 Lab',
-  supplies: 'Library Commons',
-  printing: 'DCS Faculty Room',
-  errands: 'Burns Hall Study Area',
+  food: 'Phelan',
+  supplies: 'Alingal',
+  printing: 'Santos',
+  errands: 'Bonoan',
 };
 
 /**
@@ -88,7 +88,7 @@ export function normalizeRequest(raw) {
 
   const cat = (raw.category || raw.cat || 'food').toLowerCase();
   const defaultPickup = DEFAULT_PICKUPS[cat] || "Bam-Bam's Canteen";
-  const defaultDropoff = DEFAULT_DROPOFFS[cat] || 'Phelan P217 Lab';
+  const defaultDropoff = DEFAULT_DROPOFFS[cat] || 'Phelan';
 
   const cached = raw.id ? getCachedOrder(raw.id) : null;
 
@@ -258,7 +258,7 @@ export async function createRequest({
 }) {
   const cat = String(category || 'food').toLowerCase().trim();
   const defaultPickup = DEFAULT_PICKUPS[cat] || "Bam-Bam's Canteen";
-  const defaultDropoff = DEFAULT_DROPOFFS[cat] || 'Phelan P217 Lab';
+  const defaultDropoff = DEFAULT_DROPOFFS[cat] || 'Phelan';
 
   const chosenPickup = String(pickupAddress || defaultPickup).trim();
   const chosenDropoff = String(dropoffAddress || defaultDropoff).trim();
