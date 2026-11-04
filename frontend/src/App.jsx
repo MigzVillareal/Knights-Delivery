@@ -38,9 +38,54 @@ import BottomNav from './components/BottomNav.jsx';
 import NotifsDrawer from './components/NotifsDrawer.jsx';
 import ChatDrawer from './components/ChatDrawer.jsx';
 
+const SESSION_STORAGE_KEY = 'knights_delivery_session';
+
+function getInitialState() {
+  const base = DEFAULT_STATE();
+  const token = getStoredToken();
+  if (!token) return base;
+
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (saved?.user) {
+        return {
+          ...base,
+          loggedIn: true,
+          user: saved.user,
+          role: saved.role || base.role,
+          courierSubTab: saved.courierSubTab || base.courierSubTab,
+          activeCourierOrderId: saved.activeCourierOrderId || null,
+        };
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  return { ...base, loggedIn: true };
+}
+
+function getInitialPage() {
+  const token = getStoredToken();
+  if (!token) return 'home';
+
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (saved?.page) return saved.page;
+    }
+  } catch {
+    // fallback
+  }
+  return 'home';
+}
+
 export default function App() {
-  const [state, setState] = useState(() => DEFAULT_STATE());
-  const [page, setPage] = useState('home');
+  const [state, setState] = useState(() => getInitialState());
+  const [page, setPage] = useState(() => getInitialPage());
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifsOpen, setNotifsOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -51,6 +96,58 @@ export default function App() {
   useEffect(() => {
     document.body.classList.toggle('dark', !!state.dark);
   }, [state.dark]);
+
+  // Persist session to survive page refreshes
+  useEffect(() => {
+    if (!state.loggedIn) {
+      try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch {}
+      return;
+    }
+    try {
+      localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+        user: state.user,
+        role: state.role,
+        page,
+        courierSubTab: state.courierSubTab,
+        activeCourierOrderId: state.activeCourierOrderId,
+      }));
+    } catch {
+      // storage unavailable
+    }
+  }, [state.loggedIn, state.user, state.role, state.courierSubTab, state.activeCourierOrderId, page]);
+
+  // Verify session on mount
+  useEffect(() => {
+    const token = getStoredToken();
+    if (!token) return;
+
+    let isCancelled = false;
+    getProfile()
+      .then(profile => {
+        if (isCancelled || !profile) return;
+        setState(s => {
+          const displayName = profile.display_name || s.user?.fullName || 'Student';
+          return {
+            ...s,
+            loggedIn: true,
+            user: {
+              ...s.user,
+              id: profile.id || s.user?.id || null,
+              fullName: displayName,
+              first: displayName.split(' ')[0],
+              phone: profile.phone || s.user?.phone || '',
+            },
+          };
+        });
+      })
+      .catch(err => {
+        if (err?.status === 401) {
+          handleSignOut();
+        }
+      });
+
+    return () => { isCancelled = true; };
+  }, []);
 
   // ── Toast ──────────────────────────────────────────────────────────────────
   function showToast(message, icon = 'fa-circle-check') {
@@ -165,6 +262,7 @@ export default function App() {
   // ── Auth: Sign Out ─────────────────────────────────────────────────────────
   function handleSignOut() {
     apiLogout();
+    try { localStorage.removeItem(SESSION_STORAGE_KEY); } catch {}
     setState(DEFAULT_STATE());
     setPage('home');
     showToast('Signed out of Knights Delivery', 'fa-arrow-right-from-bracket');
@@ -185,14 +283,18 @@ export default function App() {
     }
   }, []);
 
-  // ── Fetch Courier Open Queue ───────────────────────────────────────────────
+  // ── Fetch Courier Open & Assigned Queue ────────────────────────────────────
   const loadCourierQueue = useCallback(async () => {
     setState(s => ({ ...s, loadingCourierQueue: true, courierQueueError: null }));
     try {
-      const queue = await fetchOpenQueue();
+      const [openQueue, assignedQueue] = await Promise.all([
+        fetchOpenQueue().catch(() => []),
+        fetchAssignedQueue().catch(() => []),
+      ]);
+
       setState(s => {
         const myOrderIds = new Set((s.orders || []).map(o => o?.id));
-        const filtered = (Array.isArray(queue) ? queue : []).filter(o => {
+        const filteredOpen = (Array.isArray(openQueue) ? openQueue : []).filter(o => {
           if (!o) return false;
           if (myOrderIds.has(o.id)) return false;
           if (s.user?.id && o.customerId && o.customerId === s.user.id) return false;
@@ -207,7 +309,43 @@ export default function App() {
             items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
           };
         });
-        return { ...s, availableOrders: filtered, loadingCourierQueue: false };
+
+        // Any assigned request that is actively being delivered
+        const activeAssigned = (Array.isArray(assignedQueue) ? assignedQueue : [])
+          .filter(o => o && ['accepted', 'picked', 'on_way', 'arriving'].includes(o.status))
+          .map(o => {
+            const cached = getCachedOrder(o.id);
+            if (!cached) return o;
+            return {
+              ...o,
+              pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached.pickup ? cached.pickup : o.pickup,
+              dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached.dropoff ? cached.dropoff : o.dropoff,
+              items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
+            };
+          });
+
+        activeAssigned.forEach(o => {
+          if (o?.id) {
+            cacheOrderDetails(o.id, {
+              pickup: o.pickup,
+              dropoff: o.dropoff,
+              items: o.items,
+              cat: o.cat,
+            });
+          }
+        });
+
+        const currentActive = s.activeCourierOrderId;
+        const matchingAssigned = activeAssigned.find(o => o.id === currentActive);
+        const resolvedActiveId = matchingAssigned?.id || activeAssigned[0]?.id || currentActive || null;
+        const combinedOrders = [...activeAssigned, ...filteredOpen];
+
+        return {
+          ...s,
+          availableOrders: combinedOrders,
+          activeCourierOrderId: resolvedActiveId,
+          loadingCourierQueue: false,
+        };
       });
     } catch (err) {
       setState(s => ({
@@ -301,6 +439,7 @@ export default function App() {
       setState(s => ({
         ...s,
         activeCourierOrderId: orderId,
+        courierSubTab: 'active',
         availableOrders: s.availableOrders.map(o => o.id === orderId ? updated : o),
       }));
       showToast(`Order ${formatOrderId(orderId)} accepted! 🛵 Head to the pickup now.`, 'fa-motorcycle');

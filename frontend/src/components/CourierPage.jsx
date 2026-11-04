@@ -60,7 +60,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
               <span className="vbadge"><i className="fa-solid fa-check" /></span>
             </div>
             <div>
-              <h2>{courierName} <span style={{ fontSize: 14, color: 'var(--yellow)', fontWeight: 800, verticalAlign: 1 }}>★ 4.9</span></h2>
+              <h2>{courierName}</h2>
               <p>Knight Courier · Ateneo de Naga</p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
             { label: "Today's Earnings", val: `₱${courierEarnings}`, sub: `${courierTrips} completed runs` },
             { label: 'Deliveries Today', val: courierTrips, sub: 'Completed' },
             { label: 'Available Nearby', val: openCount, sub: 'orders waiting' },
-            { label: 'Acceptance Rate', val: '98%', sub: '★ Top rated' },
+            { label: 'Acceptance Rate', val: '98%', sub: 'Top rated' },
           ].map(s => (
             <div key={s.label} className="c-stat-box">
               <small>{s.label}</small>
