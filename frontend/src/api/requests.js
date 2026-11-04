@@ -21,15 +21,15 @@ export function normalizeRequest(raw) {
   // The API uses `open` for posted requests; the UI calls that state `finding`.
   const status = raw.status === 'open' ? 'finding' : (raw.status || 'finding');
 
-  let rawFee = 25;
-  if (raw.quote?.amountMinor) {
+  let rawFee = null;
+  if (raw.quote?.amountMinor !== undefined && raw.quote?.amountMinor !== null) {
     rawFee = Math.round(raw.quote.amountMinor / 100);
-  } else if (raw.customer_estimate_minor) {
+  } else if (raw.customer_estimate_minor !== undefined && raw.customer_estimate_minor !== null) {
     rawFee = Math.round(raw.customer_estimate_minor / 100);
-  } else if (raw.fee) {
+  } else if (raw.fee !== undefined && raw.fee !== null) {
     rawFee = raw.fee;
   }
-  const fee = Number(rawFee) || 25;
+  const fee = rawFee === null ? null : Number(rawFee);
   const tip = Number(raw.tip) || 0;
 
   let formattedTime = 'Just now';

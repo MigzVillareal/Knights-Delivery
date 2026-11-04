@@ -33,7 +33,7 @@ const rowFor = (overrides = {}) => ({
   handoff_note: 'Text on arrival',
   customer_estimate_minor: 1234,
   customer_estimate_currency: 'PHP',
-  status: 'awaiting_policy',
+  status: 'open',
   created_at: '2026-10-22T07:00:00.000Z',
   updated_at: '2026-10-22T07:00:00.000Z',
   ...overrides
@@ -69,7 +69,7 @@ test('validates pagination limits and opaque owner-scoped cursors', () => {
   assert.equal(validateRequestListQuery({ cursor: 'not-a-cursor' }).error.field, 'cursor');
 });
 
-test('creates a customer request as policy-pending without making a fee or posting it', async () => {
+test('creates a customer request as open for the courier queue without configuring settlement', async () => {
   let createCall;
   const api = {
     async verifyAccessToken(token) { assert.equal(token, 'customer-token'); return { id: ownerId }; },
@@ -89,8 +89,8 @@ test('creates a customer request as policy-pending without making a fee or posti
     assert.equal(response.status, 201);
     const { data } = await response.json();
     assert.equal(data.id, requestId);
-    assert.equal(data.status, 'awaiting_policy');
-    assert.deepEqual(data.posting, { enabled: false, reason: 'POLICY_NOT_CONFIGURED' });
+    assert.equal(data.status, 'open');
+    assert.deepEqual(data.posting, { enabled: true, reason: null });
     assert.equal(data.quote, null);
     assert.deepEqual(data.customerEstimate, { amountMinor: 1234, currency: 'PHP' });
     assert.equal(createCall.token, 'customer-token');

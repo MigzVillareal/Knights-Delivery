@@ -251,8 +251,7 @@ export default function App() {
       setState(s => ({
         ...s,
         activeCourierOrderId: orderId,
-        availableOrders: s.availableOrders.filter(o => o.id !== orderId),
-        courierTrips: (s.courierTrips || 0) + 1,
+        availableOrders: s.availableOrders.map(o => o.id === orderId ? updated : o),
       }));
       showToast(`Order ${orderId} accepted! 🛵 Head to the pickup now.`, 'fa-motorcycle');
       handleNavigate('courier', 'active');
@@ -269,9 +268,7 @@ export default function App() {
         ...s,
         orders: (s.orders || []).map(o => o.id === orderId ? updated : o),
         availableOrders: (s.availableOrders || []).map(o => o.id === orderId ? updated : o),
-        courierEarnings: action === 'mark_delivered'
-          ? (s.courierEarnings || 0) + (updated.fee || 0)
-          : s.courierEarnings,
+        courierTrips: action === 'mark_delivered' ? (s.courierTrips || 0) + 1 : s.courierTrips,
         activeCourierOrderId: action === 'mark_delivered' ? null : s.activeCourierOrderId,
       }));
       if (action === 'mark_delivered') {

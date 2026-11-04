@@ -152,7 +152,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
             ) : (
               openOrders.map(order => {
                 const cat = CATS[order.cat] || CATS.food;
-                const fee = Number(order.fee) || 25;
+                const fee = order.fee === null || order.fee === undefined ? null : Number(order.fee);
                 const tip = Number(order.tip) || 0;
                 return (
                   <div key={order.id} className="order-accept-card">
@@ -162,8 +162,14 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)', marginTop: 2 }}>{order.title || order.items}</h3>
                       </div>
                       <div className="order-payout">
-                        <span className="earn-val">₱{fee + tip}</span>
-                        <span className="earn-breakdown">₱{fee} + ₱{tip} tip</span>
+                        {fee === null ? (
+                          <span className="earn-breakdown">Payout not configured</span>
+                        ) : (
+                          <>
+                            <span className="earn-val">₱{fee + tip}</span>
+                            <span className="earn-breakdown">₱{fee} + ₱{tip} tip</span>
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -216,7 +222,14 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                   <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', marginTop: 2 }}>{activeOrder.title || activeOrder.items}</h2>
                 </div>
                 <div className="order-payout">
-                  <span className="earn-val">₱{(Number(activeOrder.fee) || 25) + (Number(activeOrder.tip) || 0)}</span>
+                  {activeOrder.fee === null || activeOrder.fee === undefined ? (
+                    <span className="earn-breakdown">Payout not configured</span>
+                  ) : (
+                    <>
+                      <span className="earn-val">₱{Number(activeOrder.fee) + (Number(activeOrder.tip) || 0)}</span>
+                      <span className="earn-breakdown">Estimate only · payout rules not configured</span>
+                    </>
+                  )}
                 </div>
               </div>
               <div style={{ background: 'var(--bg-soft)', borderRadius: 18, padding: '12px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -265,6 +278,16 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                 </div>
               )}
               <div>
+                {activeOrder.status === 'accepted' ? (
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    onClick={() => onAdvance && onAdvance(activeOrder.id, 'start')}
+                    style={{ width: '100%', borderRadius: 14, fontSize: 14, padding: '12px 18px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                  >
+                    <i className="fa-solid fa-person-running" /> Start delivery
+                  </button>
+                ) : (
                 <button
                   className="btn btn-primary"
                   type="button"
@@ -273,6 +296,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                 >
                   <i className="fa-solid fa-circle-check" /> Delivered
                 </button>
+                )}
               </div>
             </div>
           )}
