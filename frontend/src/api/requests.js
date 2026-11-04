@@ -8,9 +8,11 @@ const STATUS_STAGE_MAP = {
   finding: 0,
   accepted: 1,
   picked: 1,
+  in_progress: 2,
   on_way: 2,
   arriving: 2,
   delivered: 3,
+  completed: 3,
   cancelled: 0,
 };
 
@@ -90,14 +92,22 @@ export function normalizeRequest(raw) {
 
   const cached = raw.id ? getCachedOrder(raw.id) : null;
 
-  let items = raw.itemSummary || raw.item_summary || raw.item_details || raw.itemDetails || null;
-  if ((!items || items.startsWith('Request in ')) && cached?.items) {
+  let items = raw.item_details || raw.itemDetails || null;
+  if (!items && cached?.items) {
     items = cached.items;
   }
   if (!items) {
-    items = 'Delivery items';
+    const rawSummary = raw.itemSummary || raw.item_summary;
+    if (rawSummary && !rawSummary.startsWith('Request in ')) {
+      items = rawSummary;
+    } else {
+      const catCapitalized = cat ? (cat.charAt(0).toUpperCase() + cat.slice(1)) : 'Food';
+      items = `${catCapitalized} Delivery Order`;
+    }
   }
-  const title = raw.title || items;
+  const title = (raw.title && !raw.title.startsWith('Request in '))
+    ? raw.title
+    : (cached?.title && !cached.title.startsWith('Request in ') ? cached.title : items);
 
   let pickup = null;
   if (typeof raw.pickup === 'object' && raw.pickup?.address) {
@@ -174,8 +184,17 @@ export function normalizeRequest(raw) {
     runnerId: raw.assigned_runner_id || null,
     courierName,
     customerId,
-    student: raw.customer_name || raw.customer?.name || raw.student || 'Student',
-    phone: raw.customer_phone || raw.customer?.phone || raw.phone || '',
+    student: raw.customer_name
+      || raw.customer?.name
+      || raw.customer?.display_name
+      || (raw.student && raw.student !== 'Student' ? raw.student : null)
+      || cached?.customerName
+      || 'Student',
+    phone: raw.customer_phone
+      || raw.customer?.phone
+      || raw.phone
+      || cached?.customerPhone
+      || '',
     raw,
   };
 }
@@ -273,10 +292,13 @@ export async function createRequest({
       pickup: chosenPickup,
       dropoff: chosenDropoff,
       items: payload.itemDetails,
+      title: payload.itemDetails,
       cat: payload.category,
     });
     normalized.pickup = chosenPickup;
     normalized.dropoff = chosenDropoff;
+    normalized.items = payload.itemDetails;
+    normalized.title = payload.itemDetails;
   }
 
   return normalized;

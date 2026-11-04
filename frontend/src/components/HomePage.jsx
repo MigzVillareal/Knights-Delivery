@@ -38,7 +38,7 @@ export default function HomePage({ state, onNavigate }) {
       {/* Greeting */}
       <div className="greetrow">
         <div>
-          <h1 id="homeGreet">Hey, {user.first || 'Juan'} 👋</h1>
+          <h1 id="homeGreet">Hey, {user.first || 'Knight'}</h1>
           <div className="locline">
             <i className="fa-solid fa-location-dot" />
             Ateneo De Naga University

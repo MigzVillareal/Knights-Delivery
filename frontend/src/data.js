@@ -29,13 +29,15 @@ export const STAGES = [
 ];
 
 export const STATUS_UI = {
-  finding:   { label: 'Finding a courier…', cls: 'st-finding',   icon: 'fa-circle-dot' },
-  accepted:  { label: 'Courier accepted',   cls: 'st-accepted',  icon: 'fa-person-running' },
-  picked:    { label: 'Picking up order',   cls: 'st-onway',     icon: 'fa-box' },
-  on_way:    { label: 'On the way',         cls: 'st-onway',     icon: 'fa-person-running' },
-  arriving:  { label: 'Arriving soon',      cls: 'st-onway',     icon: 'fa-person-running' },
-  delivered: { label: 'Delivered',          cls: 'st-delivered', icon: 'fa-circle-check' },
-  cancelled: { label: 'Cancelled',          cls: 'st-cancelled', icon: 'fa-circle-xmark' },
+  finding:     { label: 'Finding a courier…', cls: 'st-finding',   icon: 'fa-circle-dot' },
+  accepted:    { label: 'Courier accepted',   cls: 'st-accepted',  icon: 'fa-person-running' },
+  picked:      { label: 'Picking up order',   cls: 'st-onway',     icon: 'fa-box' },
+  in_progress: { label: 'On the way',         cls: 'st-onway',     icon: 'fa-person-running' },
+  on_way:      { label: 'On the way',         cls: 'st-onway',     icon: 'fa-person-running' },
+  arriving:    { label: 'Arriving soon',      cls: 'st-onway',     icon: 'fa-person-running' },
+  delivered:   { label: 'Delivered',          cls: 'st-delivered', icon: 'fa-circle-check' },
+  completed:   { label: 'Delivered',          cls: 'st-delivered', icon: 'fa-circle-check' },
+  cancelled:   { label: 'Cancelled',          cls: 'st-cancelled', icon: 'fa-circle-xmark' },
 };
 
 export const COURIER = {
@@ -65,6 +67,7 @@ export const DEFAULT_STATE = () => ({
   orderUpdates: true,
   loggedIn: false,
   promoDismissed: false,
+  trackingOrderId: null,
   reqTab: 'ongoing',
   actTab: 'all',
   courierSubTab: 'available',

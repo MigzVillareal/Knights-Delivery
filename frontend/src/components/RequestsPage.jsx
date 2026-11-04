@@ -2,31 +2,35 @@ import { useState } from 'react';
 import { CATS } from '../data.js';
 
 const STATUS_GROUPS = {
-  ongoing: ['awaiting_policy', 'finding', 'accepted', 'picked', 'on_way', 'arriving'],
-  completed: ['delivered'],
+  ongoing: ['awaiting_policy', 'finding', 'accepted', 'picked', 'in_progress', 'on_way', 'arriving'],
+  completed: ['delivered', 'completed'],
   cancelled: ['cancelled'],
 };
 
 const STATUS_LABEL = {
   awaiting_policy: 'Pending service policy',
-  finding:   'Finding courier',
-  accepted:  'Courier accepted',
-  picked:    'Picked up',
-  on_way:    'On the way',
-  arriving:  'Arriving soon',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled',
+  finding:     'Finding courier',
+  accepted:    'Courier accepted',
+  picked:      'Picked up',
+  in_progress: 'On the way',
+  on_way:      'On the way',
+  arriving:    'Arriving soon',
+  delivered:   'Delivered',
+  completed:   'Delivered',
+  cancelled:   'Cancelled',
 };
 
 const STATUS_CLS = {
   awaiting_policy: 'st-finding',
-  finding:   'st-finding',
-  accepted:  'st-accepted',
-  picked:    'st-onway',
-  on_way:    'st-onway',
-  arriving:  'st-onway',
-  delivered: 'st-delivered',
-  cancelled: 'st-cancelled',
+  finding:     'st-finding',
+  accepted:    'st-accepted',
+  picked:      'st-onway',
+  in_progress: 'st-onway',
+  on_way:      'st-onway',
+  arriving:    'st-onway',
+  delivered:   'st-delivered',
+  completed:   'st-delivered',
+  cancelled:   'st-cancelled',
 };
 
 export default function RequestsPage({ state, onNavigate, onRefresh }) {
@@ -93,14 +97,15 @@ export default function RequestsPage({ state, onNavigate, onRefresh }) {
                   {STATUS_LABEL[order.status]}
                 </span>
                 <span className="rdate">{order.time}</span>
-                <div className="row-actions">
-                  {tab === 'ongoing' && (
-                    <button className="minibtn primary" type="button" onClick={e => { e.stopPropagation(); onNavigate('tracking', order.id); }}>
-                      Track
+                  <div className="row-actions">
+                    <button
+                      className={`minibtn${tab === 'ongoing' ? ' primary' : ''}`}
+                      type="button"
+                      onClick={e => { e.stopPropagation(); onNavigate('tracking', order.id); }}
+                    >
+                      {tab === 'ongoing' ? 'Track' : 'View Journey'}
                     </button>
-                  )}
-                  <button className="minibtn" type="button">Details</button>
-                </div>
+                  </div>
               </div>
             );
           })

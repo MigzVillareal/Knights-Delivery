@@ -1,5 +1,15 @@
 import { CATS, formatOrderId } from '../data.js';
 
+function getOrderDescription(order) {
+  if (!order) return 'Delivery Order';
+  const cand = order.items && !order.items.startsWith('Request in ')
+    ? order.items
+    : (order.title && !order.title.startsWith('Request in ') ? order.title : null);
+  if (cand) return cand;
+  const cat = order.cat ? (order.cat.charAt(0).toUpperCase() + order.cat.slice(1)) : 'Food';
+  return `${cat} Delivery Order`;
+}
+
 export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNavigate, onOpenChat, onRefreshQueue }) {
   const subTab = state.courierSubTab || 'available';
   const { courierOnline = true, courierEarnings = 0, courierTrips = 0, availableOrders = [], courierTripsLog = [], activeCourierOrderId } = state;
@@ -165,7 +175,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                     <div className="order-card-header">
                       <div>
                         <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{order.shortId || formatOrderId(order.id)} · {order.time}</span>
-                        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)', marginTop: 2 }}>{order.title || order.items}</h3>
+                        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)', marginTop: 2 }}>{getOrderDescription(order)}</h3>
                       </div>
                       <div className="order-payout">
                         {fee === null ? (
@@ -194,7 +204,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
 
                     <div className="order-items-snippet">
                       <i className="fa-solid fa-box" />
-                      {order.items}
+                      {getOrderDescription(order)}
                     </div>
 
                     <div className="order-accept-actions">
@@ -225,7 +235,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18, paddingBottom: 16, borderBottom: '1.5px solid var(--line)' }}>
                 <div>
                   <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800 }}>{activeOrder.shortId || formatOrderId(activeOrder.id)} · ACTIVE</span>
-                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', marginTop: 2 }}>{activeOrder.title || activeOrder.items}</h2>
+                  <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', marginTop: 2 }}>{getOrderDescription(activeOrder)}</h2>
                 </div>
                 <div className="order-payout">
                   {activeOrder.fee === null || activeOrder.fee === undefined ? (

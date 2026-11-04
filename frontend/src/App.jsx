@@ -160,6 +160,8 @@ export default function App() {
     setPage(targetPage);
     if (targetPage === 'courier' && subTab) {
       setState(s => ({ ...s, courierSubTab: subTab }));
+    } else if (targetPage === 'tracking' && subTab) {
+      setState(s => ({ ...s, trackingOrderId: subTab }));
     }
     setSidebarOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -301,12 +303,24 @@ export default function App() {
           return true;
         }).map(o => {
           const cached = getCachedOrder(o.id);
-          if (!cached) return o;
+          const resolvedItems = (o.items && !o.items.startsWith('Request in '))
+            ? o.items
+            : (cached?.items || o.items);
+          const resolvedTitle = (o.title && !o.title.startsWith('Request in '))
+            ? o.title
+            : (cached?.title || resolvedItems);
+          const resolvedStudent = (o.student && o.student !== 'Student')
+            ? o.student
+            : (cached?.customerName || o.student || 'Student');
+          const resolvedPhone = o.phone || cached?.customerPhone || '';
           return {
             ...o,
-            pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached.pickup ? cached.pickup : o.pickup,
-            dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached.dropoff ? cached.dropoff : o.dropoff,
-            items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
+            pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached?.pickup ? cached.pickup : o.pickup,
+            dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached?.dropoff ? cached.dropoff : o.dropoff,
+            items: resolvedItems,
+            title: resolvedTitle,
+            student: resolvedStudent,
+            phone: resolvedPhone,
           };
         });
 
@@ -314,15 +328,27 @@ export default function App() {
 
         // 1. Any assigned request that is actively being delivered
         const activeAssigned = allAssigned
-          .filter(o => o && ['accepted', 'picked', 'on_way', 'arriving'].includes(o.status))
+          .filter(o => o && ['accepted', 'picked', 'in_progress', 'on_way', 'arriving'].includes(o.status))
           .map(o => {
             const cached = getCachedOrder(o.id);
-            if (!cached) return o;
+            const resolvedItems = (o.items && !o.items.startsWith('Request in '))
+              ? o.items
+              : (cached?.items || o.items);
+            const resolvedTitle = (o.title && !o.title.startsWith('Request in '))
+              ? o.title
+              : (cached?.title || resolvedItems);
+            const resolvedStudent = (o.student && o.student !== 'Student')
+              ? o.student
+              : (cached?.customerName || o.student || 'Student');
+            const resolvedPhone = o.phone || cached?.customerPhone || '';
             return {
               ...o,
-              pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached.pickup ? cached.pickup : o.pickup,
-              dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached.dropoff ? cached.dropoff : o.dropoff,
-              items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
+              pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached?.pickup ? cached.pickup : o.pickup,
+              dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached?.dropoff ? cached.dropoff : o.dropoff,
+              items: resolvedItems,
+              title: resolvedTitle,
+              student: resolvedStudent,
+              phone: resolvedPhone,
             };
           });
 
@@ -331,12 +357,18 @@ export default function App() {
           .filter(o => o && o.status === 'delivered')
           .map(o => {
             const cached = getCachedOrder(o.id);
-            if (!cached) return o;
+            const resolvedItems = (o.items && !o.items.startsWith('Request in '))
+              ? o.items
+              : (cached?.items || o.items);
+            const resolvedTitle = (o.title && !o.title.startsWith('Request in '))
+              ? o.title
+              : (cached?.title || resolvedItems);
             return {
               ...o,
-              pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached.pickup ? cached.pickup : o.pickup,
-              dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached.dropoff ? cached.dropoff : o.dropoff,
-              items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
+              pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached?.pickup ? cached.pickup : o.pickup,
+              dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached?.dropoff ? cached.dropoff : o.dropoff,
+              items: resolvedItems,
+              title: resolvedTitle,
             };
           });
 
@@ -381,9 +413,18 @@ export default function App() {
 
   useEffect(() => {
     if (!state.loggedIn) return;
-    if (page === 'requests' || page === 'activity') loadRequests();
+    if (page === 'requests' || page === 'activity' || page === 'tracking') loadRequests();
     if (page === 'courier') loadCourierQueue();
   }, [state.loggedIn, page, loadRequests, loadCourierQueue]);
+
+  // Live polling for tracking updates
+  useEffect(() => {
+    if (!state.loggedIn || page !== 'tracking') return;
+    const interval = setInterval(() => {
+      loadRequests();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [state.loggedIn, page, loadRequests]);
 
   // ── Create Order ───────────────────────────────────────────────────────────
   async function handleCreateOrder(orderData) {
@@ -406,16 +447,26 @@ export default function App() {
         },
       });
 
+      const studentName = state.user?.fullName || state.user?.first || 'Student';
+      const studentPhone = state.user?.phone || '';
+
       if (created) {
         created.pickup = pickupLoc;
         created.dropoff = dropLoc;
+        created.items = orderData.items;
+        created.title = orderData.items;
+        created.student = studentName;
+        created.phone = studentPhone;
         if (state.user?.id) created.customerId = state.user.id;
         cacheOrderDetails(created.id, {
           pickup: pickupLoc,
           dropoff: dropLoc,
           items: orderData.items,
+          title: orderData.items,
           cat: orderData.cat,
           customerId: state.user?.id,
+          customerName: studentName,
+          customerPhone: studentPhone,
         });
       }
 
@@ -424,6 +475,7 @@ export default function App() {
         const updatedMyIds = new Set(updatedOrders.map(o => o?.id));
         return {
           ...s,
+          trackingOrderId: created.id,
           orders: updatedOrders,
           availableOrders: (s.availableOrders || []).filter(o => !updatedMyIds.has(o?.id)),
           loadingRequests: false,
@@ -453,11 +505,31 @@ export default function App() {
   async function handleAcceptOrder(orderId) {
     try {
       const updated = await acceptRequest(orderId);
+      const cached = getCachedOrder(orderId);
+      const resolvedStudent = (updated?.student && updated.student !== 'Student')
+        ? updated.student
+        : (cached?.customerName || 'Student');
+      const resolvedPhone = updated?.phone || cached?.customerPhone || '';
+      const resolvedItems = (updated?.items && !updated.items.startsWith('Request in '))
+        ? updated.items
+        : (cached?.items || updated?.items);
+      const resolvedTitle = (updated?.title && !updated.title.startsWith('Request in '))
+        ? updated.title
+        : (cached?.title || resolvedItems);
+
+      const resolved = {
+        ...updated,
+        student: resolvedStudent,
+        phone: resolvedPhone,
+        items: resolvedItems,
+        title: resolvedTitle,
+      };
+
       setState(s => ({
         ...s,
         activeCourierOrderId: orderId,
         courierSubTab: 'active',
-        availableOrders: s.availableOrders.map(o => o.id === orderId ? updated : o),
+        availableOrders: s.availableOrders.map(o => o.id === orderId ? resolved : o),
       }));
       showToast(`Order ${formatOrderId(orderId)} accepted! Head to the pickup now.`, 'fa-motorcycle');
       handleNavigate('courier', 'active');
@@ -470,16 +542,45 @@ export default function App() {
   async function handleAdvanceDelivery(orderId, action) {
     try {
       const updated = await updateLifecycle(orderId, action);
+      const cached = getCachedOrder(orderId);
+      const resolvedStudent = (updated?.student && updated.student !== 'Student')
+        ? updated.student
+        : (cached?.customerName || 'Student');
+      const resolvedPhone = updated?.phone || cached?.customerPhone || '';
+      const resolvedItems = (updated?.items && !updated.items.startsWith('Request in '))
+        ? updated.items
+        : (cached?.items || updated?.items);
+      const resolvedTitle = (updated?.title && !updated.title.startsWith('Request in '))
+        ? updated.title
+        : (cached?.title || resolvedItems);
+
+      const isDelivered = action === 'mark_delivered';
+      const resolved = {
+        ...updated,
+        status: isDelivered ? 'delivered' : updated?.status,
+        stage: isDelivered ? 3 : (updated?.stage ?? (action === 'start' ? 2 : 1)),
+        student: resolvedStudent,
+        phone: resolvedPhone,
+        items: resolvedItems,
+        title: resolvedTitle,
+      };
+
+      if (isDelivered) {
+        cacheOrderDetails(orderId, {
+          status: 'delivered',
+          stage: 3,
+        });
+      }
+
       setState(s => {
-        const isDelivered = action === 'mark_delivered';
-        const earned = (Number(updated?.fee) || 25) + (Number(updated?.tip) || 0);
+        const earned = (Number(resolved?.fee) || 25) + (Number(resolved?.tip) || 0);
         return {
           ...s,
-          orders: (s.orders || []).map(o => o.id === orderId ? updated : o),
-          availableOrders: (s.availableOrders || []).map(o => o.id === orderId ? updated : o),
+          orders: (s.orders || []).map(o => o.id === orderId ? resolved : o),
+          availableOrders: (s.availableOrders || []).map(o => o.id === orderId ? resolved : o),
           courierTrips: isDelivered ? (s.courierTrips || 0) + 1 : s.courierTrips,
           courierEarnings: isDelivered ? (s.courierEarnings || 0) + earned : s.courierEarnings,
-          courierTripsLog: isDelivered ? [updated, ...(s.courierTripsLog || [])] : (s.courierTripsLog || []),
+          courierTripsLog: isDelivered ? [resolved, ...(s.courierTripsLog || [])] : (s.courierTripsLog || []),
           activeCourierOrderId: isDelivered ? null : s.activeCourierOrderId,
           courierSubTab: isDelivered ? 'earnings' : s.courierSubTab,
         };
@@ -595,6 +696,7 @@ export default function App() {
                 <TrackingPage
                   state={state}
                   onOpenChat={() => handleOpenChat(null)}
+                  onSelectOrder={id => setState(s => ({ ...s, trackingOrderId: id }))}
                 />
               )}
 
