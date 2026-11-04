@@ -18,7 +18,8 @@ const STATUS_STAGE_MAP = {
 export function normalizeRequest(raw) {
   if (!raw || typeof raw !== 'object') return null;
 
-  const status = raw.status || 'finding';
+  // The API uses `open` for posted requests; the UI calls that state `finding`.
+  const status = raw.status === 'open' ? 'finding' : (raw.status || 'finding');
 
   let rawFee = 25;
   if (raw.quote?.amountMinor) {
@@ -123,16 +124,20 @@ export async function createRequest({
   const payload = {
     category,
     itemDetails,
-    pickupAddress,
-    dropoffAddress,
+    pickup: {
+      address: pickupAddress,
+      instructions: pickupInstructions || null,
+    },
+    dropoff: {
+      address: dropoffAddress,
+      instructions: dropoffInstructions || null,
+    },
     customerEstimate: {
       amountMinor: Number(customerEstimate.amountMinor) || 2500,
       currency: customerEstimate.currency || 'PHP',
     },
   };
 
-  if (pickupInstructions) payload.pickupInstructions = pickupInstructions;
-  if (dropoffInstructions) payload.dropoffInstructions = dropoffInstructions;
   if (handoffNote) payload.handoffNote = handoffNote;
 
   const response = await apiRequest('/requests', {

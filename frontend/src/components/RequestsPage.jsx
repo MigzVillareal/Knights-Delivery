@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { CATS } from '../data.js';
 
 const STATUS_GROUPS = {
-  ongoing: ['finding', 'accepted', 'picked', 'on_way', 'arriving'],
+  ongoing: ['awaiting_policy', 'finding', 'accepted', 'picked', 'on_way', 'arriving'],
   completed: ['delivered'],
   cancelled: ['cancelled'],
 };
 
 const STATUS_LABEL = {
+  awaiting_policy: 'Pending service policy',
   finding:   'Finding courier',
   accepted:  'Courier accepted',
   picked:    'Picked up',
@@ -18,6 +19,7 @@ const STATUS_LABEL = {
 };
 
 const STATUS_CLS = {
+  awaiting_policy: 'st-finding',
   finding:   'st-finding',
   accepted:  'st-accepted',
   picked:    'st-onway',

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
-import { createApp } from '../app.js';
+import { createApp } from '../create-app.js';
 import { loadConfig } from '../config/env.js';
 import { createSupabaseApi } from '../services/supabase-api.js';
 import { validateCreateRequest, validateRequestListQuery } from '../validators/request.validator.js';

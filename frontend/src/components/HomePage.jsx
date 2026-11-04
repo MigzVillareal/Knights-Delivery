@@ -12,6 +12,7 @@ export default function HomePage({ state, onNavigate }) {
   ];
 
   const statusLabel = {
+    awaiting_policy: 'Pending service policy',
     finding:   'Finding courier',
     accepted:  'Courier accepted',
     picked:    'Picked up',
@@ -22,6 +23,7 @@ export default function HomePage({ state, onNavigate }) {
   };
 
   const statusCls = {
+    awaiting_policy: 'st-finding',
     finding:   'st-finding',
     accepted:  'st-accepted',
     picked:    'st-onway',
