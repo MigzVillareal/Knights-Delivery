@@ -170,11 +170,11 @@ export default function App() {
     setState(s => ({ ...s, role: newRole }));
     if (newRole === 'courier') {
       setPage('courier');
-      showToast('Switched to Courier View 🛵', 'fa-motorcycle');
+      showToast('Switched to Courier View ', 'fa-motorcycle');
       loadCourierQueue();
     } else {
       setPage('home');
-      showToast('Switched to Student View 🎓', 'fa-graduation-cap');
+      showToast('Switched to Student View ', 'fa-graduation-cap');
     }
     setSidebarOpen(false);
   }
@@ -182,7 +182,7 @@ export default function App() {
   // ── Dark Mode ──────────────────────────────────────────────────────────────
   function handleThemeToggle() {
     setState(s => ({ ...s, dark: !s.dark }));
-    showToast(!state.dark ? 'Dark mode enabled 🌙' : 'Light mode enabled ☀️', 'fa-circle-half-stroke');
+    showToast(!state.dark ? 'Dark mode enabled ' : 'Light mode enabled ', 'fa-circle-half-stroke');
   }
 
   // ── Auth: Login ────────────────────────────────────────────────────────────
@@ -217,7 +217,7 @@ export default function App() {
         },
       }));
       setPage('home');
-      showToast(`Welcome back, ${displayName.split(' ')[0]}! 👋`, 'fa-circle-check');
+      showToast(`Welcome back, ${displayName.split(' ')[0]}! `, 'fa-circle-check');
     } catch (err) {
       setState(s => ({ ...s, loadingProfile: false }));
       showToast(err.message || 'Login failed. Check your credentials.', 'fa-triangle-exclamation');
@@ -252,7 +252,7 @@ export default function App() {
         },
       }));
       setPage('home');
-      showToast(`Welcome to Knights Delivery, ${displayName.split(' ')[0]}! 🎓`, 'fa-circle-check');
+      showToast(`Welcome to Knights Delivery, ${displayName.split(' ')[0]}! `, 'fa-circle-check');
     } catch (err) {
       setState(s => ({ ...s, loadingProfile: false }));
       showToast(err.message || 'Sign up failed. Please try again.', 'fa-triangle-exclamation');
@@ -310,8 +310,10 @@ export default function App() {
           };
         });
 
-        // Any assigned request that is actively being delivered
-        const activeAssigned = (Array.isArray(assignedQueue) ? assignedQueue : [])
+        const allAssigned = Array.isArray(assignedQueue) ? assignedQueue : [];
+
+        // 1. Any assigned request that is actively being delivered
+        const activeAssigned = allAssigned
           .filter(o => o && ['accepted', 'picked', 'on_way', 'arriving'].includes(o.status))
           .map(o => {
             const cached = getCachedOrder(o.id);
@@ -324,26 +326,41 @@ export default function App() {
             };
           });
 
-        activeAssigned.forEach(o => {
-          if (o?.id) {
-            cacheOrderDetails(o.id, {
-              pickup: o.pickup,
-              dropoff: o.dropoff,
-              items: o.items,
-              cat: o.cat,
-            });
-          }
-        });
+        // 2. Completed / delivered requests for Earnings & History from the database
+        const deliveredAssigned = allAssigned
+          .filter(o => o && o.status === 'delivered')
+          .map(o => {
+            const cached = getCachedOrder(o.id);
+            if (!cached) return o;
+            return {
+              ...o,
+              pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached.pickup ? cached.pickup : o.pickup,
+              dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached.dropoff ? cached.dropoff : o.dropoff,
+              items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
+            };
+          });
 
+        const totalTrips = deliveredAssigned.length;
+        const totalEarnings = deliveredAssigned.reduce(
+          (sum, o) => sum + (Number(o.fee) || 25) + (Number(o.tip) || 0),
+          0
+        );
+
+        // 3. ONLY keep activeCourierOrderId if user was explicitly already delivering it
+        // NEVER auto-assign an order from the database if activeCourierOrderId was null!
         const currentActive = s.activeCourierOrderId;
-        const matchingAssigned = activeAssigned.find(o => o.id === currentActive);
-        const resolvedActiveId = matchingAssigned?.id || activeAssigned[0]?.id || currentActive || null;
+        const matchingAssigned = currentActive ? activeAssigned.find(o => o.id === currentActive) : null;
+        const resolvedActiveId = matchingAssigned ? matchingAssigned.id : null;
+
         const combinedOrders = [...activeAssigned, ...filteredOpen];
 
         return {
           ...s,
           availableOrders: combinedOrders,
           activeCourierOrderId: resolvedActiveId,
+          courierTrips: totalTrips,
+          courierEarnings: totalEarnings,
+          courierTripsLog: deliveredAssigned,
           loadingCourierQueue: false,
         };
       });
@@ -442,7 +459,7 @@ export default function App() {
         courierSubTab: 'active',
         availableOrders: s.availableOrders.map(o => o.id === orderId ? updated : o),
       }));
-      showToast(`Order ${formatOrderId(orderId)} accepted! 🛵 Head to the pickup now.`, 'fa-motorcycle');
+      showToast(`Order ${formatOrderId(orderId)} accepted! Head to the pickup now.`, 'fa-motorcycle');
       handleNavigate('courier', 'active');
     } catch (err) {
       showToast(err.message || 'Could not accept order. Someone may have taken it.', 'fa-triangle-exclamation');
@@ -453,13 +470,20 @@ export default function App() {
   async function handleAdvanceDelivery(orderId, action) {
     try {
       const updated = await updateLifecycle(orderId, action);
-      setState(s => ({
-        ...s,
-        orders: (s.orders || []).map(o => o.id === orderId ? updated : o),
-        availableOrders: (s.availableOrders || []).map(o => o.id === orderId ? updated : o),
-        courierTrips: action === 'mark_delivered' ? (s.courierTrips || 0) + 1 : s.courierTrips,
-        activeCourierOrderId: action === 'mark_delivered' ? null : s.activeCourierOrderId,
-      }));
+      setState(s => {
+        const isDelivered = action === 'mark_delivered';
+        const earned = (Number(updated?.fee) || 25) + (Number(updated?.tip) || 0);
+        return {
+          ...s,
+          orders: (s.orders || []).map(o => o.id === orderId ? updated : o),
+          availableOrders: (s.availableOrders || []).map(o => o.id === orderId ? updated : o),
+          courierTrips: isDelivered ? (s.courierTrips || 0) + 1 : s.courierTrips,
+          courierEarnings: isDelivered ? (s.courierEarnings || 0) + earned : s.courierEarnings,
+          courierTripsLog: isDelivered ? [updated, ...(s.courierTripsLog || [])] : (s.courierTripsLog || []),
+          activeCourierOrderId: isDelivered ? null : s.activeCourierOrderId,
+          courierSubTab: isDelivered ? 'earnings' : s.courierSubTab,
+        };
+      });
       if (action === 'mark_delivered') {
         showToast('Delivery completed! Great work 🎉', 'fa-circle-check');
         handleNavigate('courier', 'earnings');

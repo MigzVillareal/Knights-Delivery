@@ -1,4 +1,4 @@
-import { CATS, STAGES, COURIER, formatOrderId } from '../data.js';
+import { CATS, STAGES, formatOrderId } from '../data.js';
 
 export default function TrackingPage({ state, onOpenChat }) {
   const orders = state.orders || [];
@@ -21,15 +21,16 @@ export default function TrackingPage({ state, onOpenChat }) {
   const stageIdx = activeOrder.stage ?? 0;
 
   const courierAssigned = Boolean(activeOrder.runnerId || activeOrder.courierName || stageIdx > 0);
-  const courierName = activeOrder.courierName || activeOrder.runnerName || (courierAssigned ? (COURIER.name || 'Knight Courier') : 'Finding courier...');
-  const courierInitials = courierAssigned
-    ? (courierName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'KC')
+  const realCourierName = activeOrder.courierName || activeOrder.runnerName || null;
+  const displayCourierName = realCourierName || (courierAssigned ? 'A Knight Courier' : 'Finding a Courier...');
+  const courierInitials = realCourierName
+    ? (realCourierName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'KC')
     : 'KC';
 
   function handleChat() {
     if (onOpenChat) {
       onOpenChat({
-        name: courierAssigned ? courierName : 'Knight Support',
+        name: courierAssigned ? displayCourierName : 'Knight Support',
         subtitle: `Courier · ${activeOrder.shortId || formatOrderId(activeOrder.id)}`,
         avatar: courierInitials,
       });
@@ -83,21 +84,26 @@ export default function TrackingPage({ state, onOpenChat }) {
                     </div>
                     <div className="sinfo">
                       <h4>{stage.label}</h4>
-                      <p>{stage.sub.replace('{courier}', courierName).replace('{dropoff}', activeOrder.dropoff)}</p>
+                      <p>
+                        {stage.sub
+                          .replace('A Knight Courier', realCourierName || 'A Knight Courier')
+                          .replace('{courier}', realCourierName || 'A Knight Courier')
+                          .replace('{dropoff}', activeOrder.dropoff)}
+                      </p>
                     </div>
                   </div>
                 );
               })}
             </div>
             <div className="feedline" id="tr-feed">
-              <i className="fa-solid fa-star" />
+              <i className="fa-solid fa-bell" />
               <span>
                 {stageIdx === 3
                   ? 'Order delivered successfully!'
                   : stageIdx === 2
                   ? `Courier is heading to ${activeOrder.dropoff}`
                   : stageIdx === 1
-                  ? `${courierName} has accepted your order`
+                  ? `${realCourierName ? `${realCourierName} has` : 'A Knight Courier has'} accepted your order`
                   : 'Finding an active student courier nearby'}
               </span>
             </div>
@@ -116,7 +122,7 @@ export default function TrackingPage({ state, onOpenChat }) {
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)' }}>
-                  {courierName}
+                  {displayCourierName}
                 </h3>
                 <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>
                   {courierAssigned ? 'Verified Knight Courier' : 'Awaiting assignment'}

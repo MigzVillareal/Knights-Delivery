@@ -23,7 +23,7 @@ export function formatOrderId(id) {
 
 export const STAGES = [
   { label: 'Request posted',   sub: 'We received your request' },
-  { label: 'Courier accepted', sub: '{courier} will pick up your order' },
+  { label: 'Courier accepted', sub: 'A Knight Courier will pick up your order' },
   { label: 'Arriving soon',    sub: 'Courier is heading to {dropoff}' },
   { label: 'Delivered',        sub: 'Enjoy! Please rate your courier' },
 ];

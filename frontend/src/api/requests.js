@@ -145,6 +145,14 @@ export function normalizeRequest(raw) {
 
   const customerId = raw.customer_id || raw.customerId || cached?.customerId || null;
 
+  const courierName = raw.courier_name
+    || raw.courierName
+    || raw.runner_name
+    || raw.runnerName
+    || raw.runner?.display_name
+    || raw.runner?.name
+    || null;
+
   const id = raw.id || `REQ-${Date.now()}`;
 
   return {
@@ -164,6 +172,7 @@ export function normalizeRequest(raw) {
     time: raw.time || formattedTime,
     notes: raw.handoff_note || raw.handoffNote || '',
     runnerId: raw.assigned_runner_id || null,
+    courierName,
     customerId,
     student: raw.customer_name || raw.customer?.name || raw.student || 'Student',
     phone: raw.customer_phone || raw.customer?.phone || raw.phone || '',
@@ -184,7 +193,7 @@ export async function fetchRequests({ limit = 20, cursor } = {}) {
   const list = Array.isArray(response) ? response : (response?.data || []);
   const normalizedList = list.map(normalizeRequest).filter(Boolean);
   normalizedList.forEach(item => {
-    if (item?.id && item.pickup && item.dropoff) {
+    if (item?.id) {
       cacheOrderDetails(item.id, {
         pickup: item.pickup,
         dropoff: item.dropoff,
