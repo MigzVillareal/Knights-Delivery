@@ -11,6 +11,16 @@ export function catCls(cat) {
   return `t-${CATS[cat]?.cls || 'neutral'}`;
 }
 
+export function formatOrderId(id) {
+  if (!id) return '';
+  const str = String(id).trim();
+  const cleaned = str.replace(/[^a-zA-Z0-9]/g, '');
+  if (cleaned.length >= 4) {
+    return `#${cleaned.slice(-4).toUpperCase()}`;
+  }
+  return `#${str.toUpperCase()}`;
+}
+
 export const STAGES = [
   { label: 'Request posted',   sub: 'We received your request' },
   { label: 'Courier accepted', sub: '{courier} will pick up your order' },
