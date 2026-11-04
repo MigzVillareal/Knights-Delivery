@@ -183,12 +183,12 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                       <div className="route-step">
                         <span className="route-dot pickup"><i className="fa-solid fa-circle-dot" style={{ fontSize: 7 }} /></span>
                         <small>Pickup</small>
-                        <b>{order.pickup || 'Campus Pickup'}</b>
+                        <b>{order.pickup || 'Location not specified'}</b>
                       </div>
                       <div className="route-step">
                         <span className="route-dot drop"><i className="fa-solid fa-location-dot" style={{ fontSize: 8 }} /></span>
                         <small>Drop-off</small>
-                        <b>{order.dropoff || 'Campus Drop-off'}</b>
+                        <b>{order.dropoff || 'Location not specified'}</b>
                       </div>
                     </div>
 

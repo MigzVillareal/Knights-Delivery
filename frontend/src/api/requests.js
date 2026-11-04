@@ -12,6 +12,45 @@ const STATUS_STAGE_MAP = {
   cancelled: 0,
 };
 
+const ORDER_CACHE_KEY = 'knights_order_details_cache';
+
+export function getCachedOrder(id) {
+  if (!id) return null;
+  try {
+    const raw = localStorage.getItem(ORDER_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : {};
+    return cache[id] || null;
+  } catch {
+    return null;
+  }
+}
+
+export function cacheOrderDetails(id, details) {
+  if (!id || !details) return;
+  try {
+    const raw = localStorage.getItem(ORDER_CACHE_KEY);
+    const cache = raw ? JSON.parse(raw) : {};
+    cache[id] = { ...(cache[id] || {}), ...details };
+    localStorage.setItem(ORDER_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore local storage errors
+  }
+}
+
+const DEFAULT_PICKUPS = {
+  food: "Bam-Bam's Canteen",
+  supplies: 'ADNU Bookstore',
+  printing: 'Print Hub, Phelan',
+  errands: 'Xavier Hall',
+};
+
+const DEFAULT_DROPOFFS = {
+  food: 'Phelan P217 Lab',
+  supplies: 'Library Commons',
+  printing: 'DCS Faculty Room',
+  errands: 'Burns Hall Study Area',
+};
+
 /**
  * Normalizes backend request record into the format expected by the frontend UI
  */
@@ -43,31 +82,71 @@ export function normalizeRequest(raw) {
     }
   }
 
-  const items = raw.itemSummary || raw.item_summary || raw.item_details || raw.itemDetails || 'Delivery items';
+  const cat = (raw.category || raw.cat || 'food').toLowerCase();
+  const defaultPickup = DEFAULT_PICKUPS[cat] || "Bam-Bam's Canteen";
+  const defaultDropoff = DEFAULT_DROPOFFS[cat] || 'Phelan P217 Lab';
+
+  const cached = raw.id ? getCachedOrder(raw.id) : null;
+
+  let items = raw.itemSummary || raw.item_summary || raw.item_details || raw.itemDetails || null;
+  if ((!items || items.startsWith('Request in ')) && cached?.items) {
+    items = cached.items;
+  }
+  if (!items) {
+    items = 'Delivery items';
+  }
   const title = raw.title || items;
 
-  let pickup = 'Campus Pickup';
+  let pickup = null;
   if (typeof raw.pickup === 'object' && raw.pickup?.address) {
     pickup = raw.pickup.address;
-  } else if (raw.pickupArea || raw.pickup_area) {
-    pickup = raw.pickupArea || raw.pickup_area;
-  } else if (raw.pickup_address || raw.pickup) {
-    pickup = raw.pickup_address || raw.pickup;
+  } else if (typeof raw.pickup === 'string' && raw.pickup.trim() && raw.pickup !== 'Campus Pickup') {
+    pickup = raw.pickup.trim();
+  } else if (raw.pickupAddress && raw.pickupAddress !== 'Campus Pickup') {
+    pickup = raw.pickupAddress;
+  } else if (raw.pickup_address && raw.pickup_address !== 'Campus Pickup') {
+    pickup = raw.pickup_address;
+  } else if (raw.pickupArea && raw.pickupArea !== 'Campus Pickup') {
+    pickup = raw.pickupArea;
+  } else if (raw.pickup_area && raw.pickup_area !== 'Campus Pickup') {
+    pickup = raw.pickup_area;
   }
 
-  let dropoff = 'Campus Dropoff';
+  if ((!pickup || pickup === 'Campus Pickup') && cached?.pickup) {
+    pickup = cached.pickup;
+  }
+  if (!pickup || pickup === 'Campus Pickup') {
+    pickup = defaultPickup;
+  }
+
+  let dropoff = null;
   if (typeof raw.dropoff === 'object' && raw.dropoff?.address) {
     dropoff = raw.dropoff.address;
-  } else if (raw.dropoffArea || raw.dropoff_area) {
-    dropoff = raw.dropoffArea || raw.dropoff_area;
-  } else if (raw.dropoff_address || raw.dropoff) {
-    dropoff = raw.dropoff_address || raw.dropoff;
+  } else if (typeof raw.dropoff === 'string' && raw.dropoff.trim() && !raw.dropoff.startsWith('Campus Drop')) {
+    dropoff = raw.dropoff.trim();
+  } else if (raw.dropoffAddress && !raw.dropoffAddress.startsWith('Campus Drop')) {
+    dropoff = raw.dropoffAddress;
+  } else if (raw.dropoff_address && !raw.dropoff_address.startsWith('Campus Drop')) {
+    dropoff = raw.dropoff_address;
+  } else if (raw.dropoffArea && !raw.dropoffArea.startsWith('Campus Drop')) {
+    dropoff = raw.dropoffArea;
+  } else if (raw.dropoff_area && !raw.dropoff_area.startsWith('Campus Drop')) {
+    dropoff = raw.dropoff_area;
   }
+
+  if ((!dropoff || dropoff.startsWith('Campus Drop')) && cached?.dropoff) {
+    dropoff = cached.dropoff;
+  }
+  if (!dropoff || dropoff.startsWith('Campus Drop')) {
+    dropoff = defaultDropoff;
+  }
+
+  const customerId = raw.customer_id || raw.customerId || cached?.customerId || null;
 
   return {
     id: raw.id || `REQ-${Date.now()}`,
     title,
-    cat: raw.category || 'food',
+    cat,
     items,
     pickup,
     pickupInstructions: typeof raw.pickup === 'object' ? (raw.pickup?.instructions || '') : (raw.pickup_instructions || ''),
@@ -80,7 +159,7 @@ export function normalizeRequest(raw) {
     time: raw.time || formattedTime,
     notes: raw.handoff_note || raw.handoffNote || '',
     runnerId: raw.assigned_runner_id || null,
-    customerId: raw.customer_id || raw.customerId || null,
+    customerId,
     student: raw.customer_name || raw.customer?.name || raw.student || 'Student',
     phone: raw.customer_phone || raw.customer?.phone || raw.phone || '',
     raw,
@@ -98,7 +177,19 @@ export async function fetchRequests({ limit = 20, cursor } = {}) {
   const endpoint = `/requests${query.toString() ? `?${query.toString()}` : ''}`;
   const response = await apiRequest(endpoint, { method: 'GET' });
   const list = Array.isArray(response) ? response : (response?.data || []);
-  return list.map(normalizeRequest).filter(Boolean);
+  const normalizedList = list.map(normalizeRequest).filter(Boolean);
+  normalizedList.forEach(item => {
+    if (item?.id && item.pickup && item.dropoff) {
+      cacheOrderDetails(item.id, {
+        pickup: item.pickup,
+        dropoff: item.dropoff,
+        items: item.items,
+        cat: item.cat,
+        customerId: item.customerId,
+      });
+    }
+  });
+  return normalizedList;
 }
 
 /**
@@ -106,7 +197,17 @@ export async function fetchRequests({ limit = 20, cursor } = {}) {
  */
 export async function fetchRequestById(requestId) {
   const response = await apiRequest(`/requests/${requestId}`, { method: 'GET' });
-  return normalizeRequest(response?.data || response);
+  const normalized = normalizeRequest(response?.data || response);
+  if (normalized?.id) {
+    cacheOrderDetails(normalized.id, {
+      pickup: normalized.pickup,
+      dropoff: normalized.dropoff,
+      items: normalized.items,
+      cat: normalized.cat,
+      customerId: normalized.customerId,
+    });
+  }
+  return normalized;
 }
 
 /**
@@ -122,15 +223,22 @@ export async function createRequest({
   handoffNote = null,
   customerEstimate = { amountMinor: 2500, currency: 'PHP' },
 }) {
+  const cat = String(category || 'food').toLowerCase().trim();
+  const defaultPickup = DEFAULT_PICKUPS[cat] || "Bam-Bam's Canteen";
+  const defaultDropoff = DEFAULT_DROPOFFS[cat] || 'Phelan P217 Lab';
+
+  const chosenPickup = String(pickupAddress || defaultPickup).trim();
+  const chosenDropoff = String(dropoffAddress || defaultDropoff).trim();
+
   const payload = {
-    category: String(category || 'food').toLowerCase().trim(),
+    category: cat,
     itemDetails: String(itemDetails || '').trim(),
     pickup: {
-      address: String(pickupAddress || 'Campus Pickup').trim(),
+      address: chosenPickup,
       instructions: pickupInstructions ? String(pickupInstructions).trim() : null,
     },
     dropoff: {
-      address: String(dropoffAddress || 'Campus Dropoff').trim(),
+      address: chosenDropoff,
       instructions: dropoffInstructions ? String(dropoffInstructions).trim() : null,
     },
     handoffNote: handoffNote ? String(handoffNote).trim() : null,
@@ -145,7 +253,19 @@ export async function createRequest({
     body: payload,
   });
 
-  return normalizeRequest(response?.data || response);
+  const normalized = normalizeRequest(response?.data || response);
+  if (normalized?.id) {
+    cacheOrderDetails(normalized.id, {
+      pickup: chosenPickup,
+      dropoff: chosenDropoff,
+      items: payload.itemDetails,
+      cat: payload.category,
+    });
+    normalized.pickup = chosenPickup;
+    normalized.dropoff = chosenDropoff;
+  }
+
+  return normalized;
 }
 
 /**

@@ -11,6 +11,8 @@ import {
   fetchRequests,
   createRequest,
   fetchRequestEvents,
+  cacheOrderDetails,
+  getCachedOrder,
 } from './api/requests.js';
 import {
   fetchOpenQueue,
@@ -195,6 +197,15 @@ export default function App() {
           if (myOrderIds.has(o.id)) return false;
           if (s.user?.id && o.customerId && o.customerId === s.user.id) return false;
           return true;
+        }).map(o => {
+          const cached = getCachedOrder(o.id);
+          if (!cached) return o;
+          return {
+            ...o,
+            pickup: (!o.pickup || o.pickup === 'Campus Pickup') && cached.pickup ? cached.pickup : o.pickup,
+            dropoff: (!o.dropoff || o.dropoff.startsWith('Campus Drop')) && cached.dropoff ? cached.dropoff : o.dropoff,
+            items: (!o.items || o.items.startsWith('Request in ')) && cached.items ? cached.items : o.items,
+          };
         });
         return { ...s, availableOrders: filtered, loadingCourierQueue: false };
       });
@@ -223,12 +234,15 @@ export default function App() {
   async function handleCreateOrder(orderData) {
     setState(s => ({ ...s, loadingRequests: true }));
     try {
+      const pickupLoc = orderData.pickup || orderData.pickupAddress || "Bam-Bam's Canteen";
+      const dropLoc = orderData.drop || orderData.dropoff || orderData.dropoffAddress || "Phelan P217 Lab";
+
       const created = await createRequest({
         category: orderData.cat,
         itemDetails: orderData.items,
-        pickupAddress: orderData.pickup,
+        pickupAddress: pickupLoc,
         pickupInstructions: orderData.pickupInstructions || null,
-        dropoffAddress: orderData.drop,
+        dropoffAddress: dropLoc,
         dropoffInstructions: orderData.dropInstructions || null,
         handoffNote: orderData.notes || null,
         customerEstimate: {
@@ -236,6 +250,19 @@ export default function App() {
           currency: 'PHP',
         },
       });
+
+      if (created) {
+        created.pickup = pickupLoc;
+        created.dropoff = dropLoc;
+        if (state.user?.id) created.customerId = state.user.id;
+        cacheOrderDetails(created.id, {
+          pickup: pickupLoc,
+          dropoff: dropLoc,
+          items: orderData.items,
+          cat: orderData.cat,
+          customerId: state.user?.id,
+        });
+      }
 
       setState(s => {
         const updatedOrders = [created, ...(s.orders || [])];
