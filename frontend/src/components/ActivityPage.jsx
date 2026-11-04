@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CATS } from '../data.js';
+import { CATS, formatOrderId } from '../data.js';
 
 const STATUS_ALL_LABEL = {
   finding:   'Finding courier',
@@ -80,7 +80,7 @@ export default function ActivityPage({ state }) {
             return (
               <div key={order.id} className="trow">
                 <div className="tcell">
-                  <b>{order.id}</b>
+                  <b>{order.shortId || formatOrderId(order.id)}</b>
                   <small>{order.items}</small>
                 </div>
                 <div className="tcell">

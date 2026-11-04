@@ -1,4 +1,4 @@
-import { CATS, STAGES, COURIER } from '../data.js';
+import { CATS, STAGES, COURIER, formatOrderId } from '../data.js';
 
 export default function TrackingPage({ state, onOpenChat }) {
   const orders = state.orders || [];
@@ -29,7 +29,7 @@ export default function TrackingPage({ state, onOpenChat }) {
         <div>
           <div className="trackcard" id="tr-hero">
             <div className="tk-top">
-              <b>{activeOrder.id} · {cat?.name}</b>
+              <b>{activeOrder.shortId || formatOrderId(activeOrder.id)} · {cat?.name}</b>
               <span className="livechip">
                 <span className="pulse-dot" />
                 LIVE

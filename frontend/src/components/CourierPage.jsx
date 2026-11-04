@@ -1,4 +1,4 @@
-import { CATS } from '../data.js';
+import { CATS, formatOrderId } from '../data.js';
 
 export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNavigate, onOpenChat, onRefreshQueue }) {
   const subTab = state.courierSubTab || 'available';
@@ -164,7 +164,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                   <div key={order.id} className="order-accept-card">
                     <div className="order-card-header">
                       <div>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{order.id} · {order.time}</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.5px' }}>{order.shortId || formatOrderId(order.id)} · {order.time}</span>
                         <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)', marginTop: 2 }}>{order.title || order.items}</h3>
                       </div>
                       <div className="order-payout">
@@ -224,7 +224,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
             <div style={{ background: 'var(--surface)', borderRadius: 24, border: '2px solid var(--navy-soft)', boxShadow: 'var(--shadow-card)', padding: 24, marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18, paddingBottom: 16, borderBottom: '1.5px solid var(--line)' }}>
                 <div>
-                  <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800 }}>{activeOrder.id} · ACTIVE</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 800 }}>{activeOrder.shortId || formatOrderId(activeOrder.id)} · ACTIVE</span>
                   <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--ink)', marginTop: 2 }}>{activeOrder.title || activeOrder.items}</h2>
                 </div>
                 <div className="order-payout">
@@ -251,7 +251,7 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
                       if (onOpenChat) {
                         onOpenChat({
                           name: activeOrder.student || 'Student',
-                          subtitle: `Student · ${activeOrder.id}`,
+                          subtitle: `Student · ${activeOrder.shortId || formatOrderId(activeOrder.id)}`,
                           avatar: (activeOrder.student || 'ST')
                             .split(' ')
                             .map(w => w[0])

@@ -1,6 +1,8 @@
 // Customer / Student Requests API Service
 
 import { apiRequest } from './client.js';
+import { formatOrderId } from '../data.js';
+export { formatOrderId };
 
 const STATUS_STAGE_MAP = {
   finding: 0,
@@ -143,8 +145,11 @@ export function normalizeRequest(raw) {
 
   const customerId = raw.customer_id || raw.customerId || cached?.customerId || null;
 
+  const id = raw.id || `REQ-${Date.now()}`;
+
   return {
-    id: raw.id || `REQ-${Date.now()}`,
+    id,
+    shortId: formatOrderId(id),
     title,
     cat,
     items,

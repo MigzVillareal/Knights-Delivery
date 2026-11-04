@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { DEFAULT_STATE } from './data.js';
+import { DEFAULT_STATE, formatOrderId } from './data.js';
 import {
   login as apiLogin,
   signup as apiSignup,
@@ -276,7 +276,7 @@ export default function App() {
             {
               id: Date.now(),
               type: 'order',
-              title: `Request ${created.id} posted`,
+              title: `Request ${created.shortId || formatOrderId(created.id)} posted`,
               body: `Looking for a courier to deliver ${orderData.items.slice(0, 30)}...`,
               time: 'Just now',
               read: false,
@@ -286,7 +286,7 @@ export default function App() {
         };
       });
 
-      showToast(`Request ${created.id} posted! Finding a courier...`, 'fa-box');
+      showToast(`Request ${created.shortId || formatOrderId(created.id)} posted! Finding a courier...`, 'fa-box');
       setPage('requests');
     } catch (err) {
       setState(s => ({ ...s, loadingRequests: false }));
@@ -303,7 +303,7 @@ export default function App() {
         activeCourierOrderId: orderId,
         availableOrders: s.availableOrders.map(o => o.id === orderId ? updated : o),
       }));
-      showToast(`Order ${orderId} accepted! 🛵 Head to the pickup now.`, 'fa-motorcycle');
+      showToast(`Order ${formatOrderId(orderId)} accepted! 🛵 Head to the pickup now.`, 'fa-motorcycle');
       handleNavigate('courier', 'active');
     } catch (err) {
       showToast(err.message || 'Could not accept order. Someone may have taken it.', 'fa-triangle-exclamation');
