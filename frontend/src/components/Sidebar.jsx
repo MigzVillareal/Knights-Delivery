@@ -13,7 +13,13 @@ export default function Sidebar({
   const { user, dark, availableOrders = [], orders = [] } = state;
   const initials = (user.fullName || 'User').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const ongoingCount = orders.filter(o => ['finding', 'accepted', 'picked', 'on_way', 'arriving'].includes(o.status)).length;
-  const openCourierCount = availableOrders.filter(o => o.status === 'finding').length;
+  const myOrderIds = new Set((orders || []).map(o => o?.id));
+  const openCourierCount = availableOrders.filter(o => {
+    if (!o || o.status !== 'finding') return false;
+    if (myOrderIds.has(o.id)) return false;
+    if (user?.id && o.customerId && o.customerId === user.id) return false;
+    return true;
+  }).length;
 
   function handleNav(targetPage, subTab) {
     onNavigate(targetPage, subTab);

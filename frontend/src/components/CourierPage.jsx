@@ -40,7 +40,13 @@ export default function CourierPage({ state, onUpdate, onAccept, onAdvance, onNa
     ? availableOrders.find(o => o?.id === activeCourierOrderId)
     : null;
 
-  const openOrders = (availableOrders || []).filter(o => o && o.status === 'finding');
+  const myOrderIds = new Set((state.orders || []).map(o => o?.id));
+  const openOrders = (availableOrders || []).filter(o => {
+    if (!o || o.status !== 'finding') return false;
+    if (myOrderIds.has(o.id)) return false;
+    if (courierUser?.id && o.customerId && o.customerId === courierUser.id) return false;
+    return true;
+  });
   const openCount = openOrders.length;
 
   return (

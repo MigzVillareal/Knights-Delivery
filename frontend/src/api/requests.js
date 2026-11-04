@@ -80,6 +80,7 @@ export function normalizeRequest(raw) {
     time: raw.time || formattedTime,
     notes: raw.handoff_note || raw.handoffNote || '',
     runnerId: raw.assigned_runner_id || null,
+    customerId: raw.customer_id || raw.customerId || null,
     student: raw.customer_name || raw.customer?.name || raw.student || 'Student',
     phone: raw.customer_phone || raw.customer?.phone || raw.phone || '',
     raw,

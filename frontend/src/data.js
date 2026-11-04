@@ -50,7 +50,7 @@ export const FAQ_ITEMS = [
 ];
 
 export const DEFAULT_STATE = () => ({
-  user: { fullName: '', first: '', email: '', sid: '', phone: '' },
+  user: { id: null, fullName: '', first: '', email: '', sid: '', phone: '' },
   role: 'student',
   dark: false,
   push: true,

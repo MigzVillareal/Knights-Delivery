@@ -103,11 +103,13 @@ export default function App() {
       }
 
       const displayName = profile?.display_name || credentials.name || credentials.email.split('@')[0];
+      const userId = result?.user?.id || profile?.id || null;
       setState(s => ({
         ...s,
         loggedIn: true,
         loadingProfile: false,
         user: {
+          id: userId,
           fullName: displayName,
           first: displayName.split(' ')[0],
           email: credentials.email,
@@ -136,11 +138,13 @@ export default function App() {
       if (token) setStoredToken(token);
 
       const displayName = credentials.name || credentials.email.split('@')[0];
+      const userId = result?.user?.id || null;
       setState(s => ({
         ...s,
         loggedIn: true,
         loadingProfile: false,
         user: {
+          id: userId,
           fullName: displayName,
           first: displayName.split(' ')[0],
           email: credentials.email,
@@ -184,7 +188,16 @@ export default function App() {
     setState(s => ({ ...s, loadingCourierQueue: true, courierQueueError: null }));
     try {
       const queue = await fetchOpenQueue();
-      setState(s => ({ ...s, availableOrders: Array.isArray(queue) ? queue : [], loadingCourierQueue: false }));
+      setState(s => {
+        const myOrderIds = new Set((s.orders || []).map(o => o?.id));
+        const filtered = (Array.isArray(queue) ? queue : []).filter(o => {
+          if (!o) return false;
+          if (myOrderIds.has(o.id)) return false;
+          if (s.user?.id && o.customerId && o.customerId === s.user.id) return false;
+          return true;
+        });
+        return { ...s, availableOrders: filtered, loadingCourierQueue: false };
+      });
     } catch (err) {
       setState(s => ({
         ...s,
@@ -194,7 +207,12 @@ export default function App() {
     }
   }, []);
 
-  // ── Fetch on page visit ────────────────────────────────────────────────────
+  // ── Fetch on login & page visit ────────────────────────────────────────────
+  useEffect(() => {
+    if (!state.loggedIn) return;
+    loadRequests();
+  }, [state.loggedIn, loadRequests]);
+
   useEffect(() => {
     if (!state.loggedIn) return;
     if (page === 'requests' || page === 'activity') loadRequests();
@@ -219,22 +237,27 @@ export default function App() {
         },
       });
 
-      setState(s => ({
-        ...s,
-        orders: [created, ...(s.orders || [])],
-        loadingRequests: false,
-        notifs: [
-          {
-            id: Date.now(),
-            type: 'order',
-            title: `Request ${created.id} posted`,
-            body: `Looking for a courier to deliver ${orderData.items.slice(0, 30)}...`,
-            time: 'Just now',
-            read: false,
-          },
-          ...(s.notifs || []),
-        ],
-      }));
+      setState(s => {
+        const updatedOrders = [created, ...(s.orders || [])];
+        const updatedMyIds = new Set(updatedOrders.map(o => o?.id));
+        return {
+          ...s,
+          orders: updatedOrders,
+          availableOrders: (s.availableOrders || []).filter(o => !updatedMyIds.has(o?.id)),
+          loadingRequests: false,
+          notifs: [
+            {
+              id: Date.now(),
+              type: 'order',
+              title: `Request ${created.id} posted`,
+              body: `Looking for a courier to deliver ${orderData.items.slice(0, 30)}...`,
+              time: 'Just now',
+              read: false,
+            },
+            ...(s.notifs || []),
+          ],
+        };
+      });
 
       showToast(`Request ${created.id} posted! Finding a courier...`, 'fa-box');
       setPage('requests');
