@@ -21,9 +21,9 @@ export default function ChatDrawer({ isOpen, onClose, chatMessages = [], onSendM
     setText('');
   }
 
-  const name = recipient?.name || 'Juan Dela Cruz';
+  const name = recipient?.name || 'Knight Courier';
   const subtitle = recipient?.subtitle || 'Courier · Active Delivery';
-  const avatar = recipient?.avatar || 'JD';
+  const avatar = recipient?.avatar || 'KC';
   const placeholder = recipient?.placeholder || 'Type a message...';
 
   const isCourier = Boolean(recipient?.isCourierMode);

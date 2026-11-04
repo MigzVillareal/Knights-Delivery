@@ -20,6 +20,22 @@ export default function TrackingPage({ state, onOpenChat }) {
   const cat = CATS[activeOrder.cat];
   const stageIdx = activeOrder.stage ?? 0;
 
+  const courierAssigned = Boolean(activeOrder.runnerId || activeOrder.courierName || stageIdx > 0);
+  const courierName = activeOrder.courierName || activeOrder.runnerName || (courierAssigned ? (COURIER.name || 'Knight Courier') : 'Finding courier...');
+  const courierInitials = courierAssigned
+    ? (courierName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'KC')
+    : 'KC';
+
+  function handleChat() {
+    if (onOpenChat) {
+      onOpenChat({
+        name: courierAssigned ? courierName : 'Knight Support',
+        subtitle: `Courier · ${activeOrder.shortId || formatOrderId(activeOrder.id)}`,
+        avatar: courierInitials,
+      });
+    }
+  }
+
   const STEP_ICONS = ['fa-inbox', 'fa-user', 'fa-location-dot', 'fa-circle-check'];
 
   return (
@@ -41,7 +57,7 @@ export default function TrackingPage({ state, onOpenChat }) {
               <i style={{ width: `${((stageIdx + 1) / STAGES.length) * 100}%` }} />
             </div>
             <div className="tk-btns">
-              <button className="tk-main" onClick={onOpenChat} type="button" style={{ width: '100%' }}>
+              <button className="tk-main" onClick={handleChat} type="button" style={{ width: '100%' }}>
                 <i className="fa-solid fa-comment" /> Chat with courier
               </button>
             </div>
@@ -67,7 +83,7 @@ export default function TrackingPage({ state, onOpenChat }) {
                     </div>
                     <div className="sinfo">
                       <h4>{stage.label}</h4>
-                      <p>{stage.sub.replace('{courier}', COURIER.name).replace('{dropoff}', activeOrder.dropoff)}</p>
+                      <p>{stage.sub.replace('{courier}', courierName).replace('{dropoff}', activeOrder.dropoff)}</p>
                     </div>
                   </div>
                 );
@@ -81,7 +97,7 @@ export default function TrackingPage({ state, onOpenChat }) {
                   : stageIdx === 2
                   ? `Courier is heading to ${activeOrder.dropoff}`
                   : stageIdx === 1
-                  ? `${COURIER.name} has accepted your order`
+                  ? `${courierName} has accepted your order`
                   : 'Finding an active student courier nearby'}
               </span>
             </div>
@@ -93,18 +109,22 @@ export default function TrackingPage({ state, onOpenChat }) {
           <div className="panel" style={{ marginBottom: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
               <div className="avatar" style={{ width: 56, height: 56, position: 'relative' }}>
-                {COURIER.initials}
-                <span className="vbadge"><i className="fa-solid fa-check" /></span>
+                {courierAssigned ? courierInitials : <i className="fa-solid fa-person-running" style={{ fontSize: 20 }} />}
+                {courierAssigned && (
+                  <span className="vbadge"><i className="fa-solid fa-check" /></span>
+                )}
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, color: 'var(--ink)' }}>
-                  {COURIER.name} <span style={{ fontSize: 13, color: 'var(--yellow-ink)' }}>★ {COURIER.rating}</span>
+                  {courierName}
                 </h3>
-                <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>Knight Courier</p>
+                <p style={{ fontSize: 12.5, color: 'var(--muted)', fontWeight: 700 }}>
+                  {courierAssigned ? 'Verified Knight Courier' : 'Awaiting assignment'}
+                </p>
               </div>
             </div>
             <div style={{ marginTop: 14 }}>
-              <button className="minibtn primary" onClick={onOpenChat} style={{ width: '100%', padding: '10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} type="button">
+              <button className="minibtn primary" onClick={handleChat} style={{ width: '100%', padding: '10px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} type="button">
                 <i className="fa-solid fa-comment" /> Chat with courier
               </button>
             </div>

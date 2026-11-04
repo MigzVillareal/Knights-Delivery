@@ -39,10 +39,8 @@ export const STATUS_UI = {
 };
 
 export const COURIER = {
-  name: 'Juan Dela Cruz',
-  initials: 'JD',
-  rating: '4.9',
-  deliveries: '1,248',
+  name: 'Knight Courier',
+  initials: 'KC',
 };
 
 export const TIME_OPTIONS = [
