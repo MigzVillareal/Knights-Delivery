@@ -2,39 +2,51 @@ import { useState } from 'react';
 import { CATS, formatOrderId } from '../data.js';
 
 const STATUS_ALL_LABEL = {
+  awaiting_policy: 'Pending policy',
   finding:   'Finding courier',
   accepted:  'Courier accepted',
   picked:    'Picked up',
+  in_progress: 'On the way',
   on_way:    'On the way',
   arriving:  'Arriving soon',
   delivered: 'Delivered',
+  completed: 'Delivered',
   cancelled: 'Cancelled',
 };
 
 const STATUS_ALL_CLS = {
+  awaiting_policy: 'st-finding',
   finding:   'st-finding',
   accepted:  'st-accepted',
   picked:    'st-onway',
+  in_progress: 'st-onway',
   on_way:    'st-onway',
   arriving:  'st-onway',
   delivered: 'st-delivered',
+  completed: 'st-delivered',
   cancelled: 'st-cancelled',
 };
 
-const ONGOING = ['finding','accepted','picked','on_way','arriving'];
+const ONGOING = ['awaiting_policy', 'finding', 'accepted', 'picked', 'in_progress', 'on_way', 'arriving'];
+const COMPLETED = ['delivered', 'completed'];
+const CANCELLED = ['cancelled'];
 
-export default function ActivityPage({ state }) {
+export default function ActivityPage({ state, onNavigate }) {
   const [tab, setTab] = useState('all');
   const orders = state.orders || [];
 
-  const filtered = tab === 'all' ? orders
-    : tab === 'ongoing' ? orders.filter(o => ONGOING.includes(o.status))
-    : orders.filter(o => o.status === tab);
+  const filtered = tab === 'all'
+    ? orders
+    : tab === 'ongoing'
+    ? orders.filter(o => ONGOING.includes(o.status))
+    : tab === 'completed'
+    ? orders.filter(o => COMPLETED.includes(o.status))
+    : orders.filter(o => CANCELLED.includes(o.status));
 
   const stats = [
-    { icon: 'fa-box',          bg: 'var(--navy-tint)',    color: 'var(--navy-soft)',  label: 'Total Orders',  value: orders.length, delta: '+2 this week' },
-    { icon: 'fa-circle-check', bg: 'var(--ok-bg)',        color: 'var(--ok)',         label: 'Completed',     value: orders.filter(o => o.status === 'delivered').length, delta: '' },
-    { icon: 'fa-peso-sign',    bg: 'var(--yellow-pale)',  color: 'var(--yellow-ink)', label: 'Total Spent',   value: `₱${orders.reduce((acc, o) => acc + (o.fee || 0), 0)}`, delta: '' },
+    { icon: 'fa-box',          bg: 'var(--navy-tint)',    color: 'var(--navy-soft)',  label: 'Total Orders',  value: orders.length, delta: '' },
+    { icon: 'fa-circle-check', bg: 'var(--ok-bg)',        color: 'var(--ok)',         label: 'Completed',     value: orders.filter(o => COMPLETED.includes(o.status)).length, delta: '' },
+    { icon: 'fa-peso-sign',    bg: 'var(--yellow-pale)',  color: 'var(--yellow-ink)', label: 'Total Spent',   value: `₱${orders.reduce((acc, o) => acc + (Number(o.fee) || 0) + (Number(o.tip) || 0), 0)}`, delta: '' },
   ];
 
   return (
@@ -78,7 +90,12 @@ export default function ActivityPage({ state }) {
           ) : filtered.map(order => {
             const cat = CATS[order.cat];
             return (
-              <div key={order.id} className="trow">
+              <div
+                key={order.id}
+                className="trow"
+                style={{ cursor: onNavigate ? 'pointer' : 'default' }}
+                onClick={() => onNavigate && onNavigate('tracking', order.id)}
+              >
                 <div className="tcell">
                   <b>{order.shortId || formatOrderId(order.id)}</b>
                   <small>{order.items}</small>
@@ -90,8 +107,8 @@ export default function ActivityPage({ state }) {
                   </span>
                 </div>
                 <div className="tcell">
-                  <span className={`status ${STATUS_ALL_CLS[order.status]}`}>
-                    {STATUS_ALL_LABEL[order.status]}
+                  <span className={`status ${STATUS_ALL_CLS[order.status] || 'st-finding'}`}>
+                    {STATUS_ALL_LABEL[order.status] || order.status}
                   </span>
                 </div>
                 <div className="tcell">
@@ -101,7 +118,16 @@ export default function ActivityPage({ state }) {
                   <span className="amount">₱{(order.fee || 0) + (order.tip || 0)}</span>
                 </div>
                 <div>
-                  <button className="minibtn" type="button">View</button>
+                  <button
+                    className="minibtn"
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (onNavigate) onNavigate('tracking', order.id);
+                    }}
+                  >
+                    View
+                  </button>
                 </div>
               </div>
             );
